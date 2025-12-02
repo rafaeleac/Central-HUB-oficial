@@ -19,6 +19,8 @@ interface Zone {
   y: number;
   width: number;
   height: number;
+  rotation?: 0 | 90 | 180 | 270;
+  timeline?: TimelineItem[];
 }
 
 interface TimelineItem {
@@ -26,6 +28,7 @@ interface TimelineItem {
   type: "file" | "layout";
   duration: number;
   file_id?: string;
+  rotation?: 0 | 90 | 180 | 270;
 }
 
 interface LayoutData {
@@ -33,6 +36,7 @@ interface LayoutData {
   zones?: Zone[];
   timeline?: TimelineItem[];
   widgets?: WidgetConfig[];
+  rotation?: 0 | 90 | 180 | 270;
 }
 
 interface Props {
@@ -57,10 +61,14 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   useEffect(() => {
     if (layout && open) {
       setLocalData({
-        zones: layout.layout_data?.zones || [],
+        zones: (layout.layout_data?.zones || []).map((z: any) => ({
+          ...(z || {}),
+          timeline: z?.timeline || [],
+        })),
         timeline: layout.layout_data?.timeline || [],
         widgets: layout.layout_data?.widgets || [],
         template: layout.layout_data?.template,
+        rotation: layout.layout_data?.rotation || 0,
       });
       setSelectedZoneIndex(null);
       setSelectedWidgetId(null);
@@ -99,6 +107,8 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
       y: 0,
       width: 50,
       height: 50,
+      rotation: 0,
+      timeline: [],
     };
     const updatedZones = [...(localData.zones || []), newZone];
     setLocalData((d) => ({ ...d, zones: updatedZones }));
@@ -114,16 +124,67 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   };
 
   const addTimelineFile = (fileId: string) => {
+    // If a zone is selected, add the file to that zone's timeline
+    if (selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex]) {
+      const item: TimelineItem = {
+        id: String(Date.now()),
+        type: "file",
+        duration: 10,
+        file_id: fileId,
+        rotation: 0,
+      };
+      setLocalData((d) => {
+        const zones = (d.zones || []).map((z, i) =>
+          i === selectedZoneIndex
+            ? { ...(z || {}), timeline: [...(z.timeline || []), item] }
+            : z
+        );
+        return { ...d, zones };
+      });
+      return;
+    }
+
+    // fallback to global timeline
     const item: TimelineItem = {
       id: String(Date.now()),
       type: "file",
       duration: 10,
       file_id: fileId,
+      rotation: 0,
     };
     setLocalData((d) => ({ ...d, timeline: [...(d.timeline || []), item] }));
   };
 
+  const addTimelineFileToZone = (zoneIndex: number, fileId: string) => {
+    const item: TimelineItem = {
+      id: String(Date.now()),
+      type: "file",
+      duration: 10,
+      file_id: fileId,
+      rotation: 0,
+    };
+    setLocalData((d) => {
+      const zones = (d.zones || []).map((z, i) =>
+        i === zoneIndex ? { ...(z || {}), timeline: [...(z.timeline || []), item] } : z
+      );
+      return { ...d, zones };
+    });
+  };
+
   const setTimelineItemDuration = (index: number, duration: number) => {
+    // If a zone is selected, modify that zone's timeline
+    if (selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex]) {
+      setLocalData((d) => ({
+        ...d,
+        zones: (d.zones || []).map((z, i) =>
+          i === selectedZoneIndex
+            ? { ...(z || {}), timeline: (z.timeline || []).map((t, ii) => (ii === index ? { ...t, duration } : t)) }
+            : z
+        ),
+      }));
+      return;
+    }
+
     setLocalData((d) => ({
       ...d,
       timeline: (d.timeline || []).map((t, i) => (i === index ? { ...t, duration } : t)),
@@ -131,6 +192,16 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   };
 
   const removeTimelineItem = (index: number) => {
+    if (selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex]) {
+      setLocalData((d) => ({
+        ...d,
+        zones: (d.zones || []).map((z, i) =>
+          i === selectedZoneIndex ? { ...(z || {}), timeline: (z.timeline || []).filter((_, ii) => ii !== index) } : z
+        ),
+      }));
+      return;
+    }
+
     setLocalData((d) => ({
       ...d,
       timeline: (d.timeline || []).filter((_, i) => i !== index),
@@ -199,6 +270,19 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
             Edite zonas, timeline e widgets. Salve para aplicar nas telas vinculadas.
           </DialogDescription>
         </DialogHeader>
+        <div className="flex items-center gap-4 px-4">
+          <label className="text-sm text-muted-foreground">Rotação do Layout:</label>
+          <select
+            value={(localData as any).rotation ?? 0}
+            onChange={(e) => setLocalData((d) => ({ ...(d || {}), rotation: Number(e.target.value) as 0 | 90 | 180 | 270 }))}
+            className="bg-background text-sm border rounded px-2 h-8"
+          >
+            <option value={0}>0°</option>
+            <option value={90}>90°</option>
+            <option value={180}>180°</option>
+            <option value={270}>270°</option>
+          </select>
+        </div>
 
         <div className="grid grid-cols-4 gap-4">
           {/* Canvas Principal */}
@@ -307,6 +391,21 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                       }
                     />
                   </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Rotação (°)</label>
+                    <select
+                      value={(localData.zones[selectedZoneIndex].rotation || 0).toString()}
+                      onChange={(e) =>
+                        updateZone(selectedZoneIndex, { rotation: Number(e.target.value) as 0 | 90 | 180 | 270 })
+                      }
+                      className="w-full bg-background text-xs border rounded px-2 h-9"
+                    >
+                      <option value="0">0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -327,34 +426,62 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
               </div>
             )}
 
-            {/* Timeline */}
+            {/* Timeline (zone-specific when a zone is selected) */}
             <div className="p-3 border border-border rounded-lg bg-muted/50 space-y-2">
-              <h4 className="text-sm font-medium">Timeline ({localData.timeline?.length || 0} itens)</h4>
-              <div className="max-h-32 overflow-auto space-y-1">
-                {(localData.timeline || []).map((t, i) => (
-                  <div key={t.id} className="flex items-center gap-2 bg-background p-2 rounded text-xs">
-                    <div className="flex-1">
-                      {t.type === "file" && `📁 Arquivo`}
-                    </div>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={t.duration}
-                      onChange={(e) =>
-                        setTimelineItemDuration(i, Number(e.target.value))
-                      }
-                      className="w-16 h-8"
-                    />
-                    <span className="text-xs text-muted-foreground">s</span>
-                    <button
-                      onClick={() => removeTimelineItem(i)}
-                      className="text-red-400 hover:text-red-600"
-                    >
-                      ✕
-                    </button>
+              {selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex] ? (
+                <>
+                  <h4 className="text-sm font-medium">Timeline - Zona {selectedZoneIndex + 1} ({(localData.zones[selectedZoneIndex].timeline || []).length} itens)</h4>
+                  <div className="max-h-40 overflow-auto space-y-1">
+                    {(localData.zones[selectedZoneIndex].timeline || []).map((t, i) => (
+                      <div key={t.id} className="flex items-center gap-2 bg-background p-2 rounded text-xs">
+                        <div className="flex-1 truncate">
+                          {t.type === "file" && `📁 Arquivo`}
+                        </div>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={t.duration}
+                          onChange={(e) => setTimelineItemDuration(i, Number(e.target.value))}
+                          className="w-16 h-8"
+                        />
+                        <span className="text-xs text-muted-foreground">s</span>
+                        <label className="text-xs ml-2">Rotação</label>
+                        <select
+                          value={(t.rotation ?? 0).toString()}
+                          onChange={(e) => {
+                            const rot = Number(e.target.value) as 0 | 90 | 180 | 270;
+                            setLocalData((d) => ({
+                              ...d,
+                              zones: (d.zones || []).map((z, ii) =>
+                                ii === selectedZoneIndex
+                                  ? { ...(z || {}), timeline: (z.timeline || []).map((it, idx) => (idx === i ? { ...it, rotation: rot } : it)) }
+                                  : z
+                              ),
+                            }));
+                          }}
+                          className="bg-background text-xs border rounded px-1"
+                        >
+                          <option value="0">0°</option>
+                          <option value="90">90°</option>
+                          <option value="180">180°</option>
+                          <option value="270">270°</option>
+                        </select>
+                        <button
+                          onClick={() => removeTimelineItem(i)}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <>
+                  <h4 className="text-sm font-medium">Timeline Global ({localData.timeline?.length || 0} itens)</h4>
+                  <div className="text-xs text-muted-foreground">Clique em uma zona para visualizar/editar a timeline específica dela. Você também pode adicionar arquivos globalmente abaixo.</div>
+                </>
+              )}
             </div>
           </div>
 

@@ -246,33 +246,80 @@ const MediaPlayer = ({ fileUrl, fileType, fileName }: {
 
 // Componente para renderizar layout com widgets
 const LayoutRenderer = ({ layoutData }: { layoutData: any }) => {
-  return (
-    <div className="w-full h-screen relative bg-black overflow-hidden">
-      {/* Fundo do layout (zonas podem ser renderizadas aqui se necessário) */}
-      <div className="w-full h-full">
-        {/* Renderizar Widgets */}
-        {layoutData?.widgets && layoutData.widgets.length > 0 && (
-          <>
-            {layoutData.widgets.map((widget: any) => (
-              <WidgetRenderer key={widget.id} widget={widget} />
-            ))}
-          </>
+  // ZoneRenderer: responsável por reproduzir os itens dentro de uma zona
+  const ZoneRenderer = ({ zone, layoutRotation }: { zone: any; layoutRotation?: number }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [filesMap, setFilesMap] = useState<Record<string, any>>({});
+
+    useEffect(() => {
+      // buscar metadados dos arquivos referenciados na timeline
+      const ids = (zone.timeline || []).filter((it: any) => it.file_id).map((it: any) => it.file_id);
+      if (ids.length === 0) return;
+      supabase
+        .from("files")
+        .select("id, file_url, file_type, name, duration")
+        .in("id", ids)
+        .then(({ data }) => {
+          const map: Record<string, any> = {};
+          (data || []).forEach((f: any) => (map[f.id] = f));
+          setFilesMap(map);
+        })
+        .catch((e) => console.error(e));
+    }, [zone.timeline]);
+
+    useEffect(() => {
+      if (!zone.timeline || zone.timeline.length === 0) return;
+      const cur = zone.timeline[currentIndex];
+      const duration = (cur?.duration || 10) * 1000;
+      const timer = setTimeout(() => {
+        setCurrentIndex((p: number) => (p + 1 >= zone.timeline.length ? 0 : p + 1));
+      }, duration);
+      return () => clearTimeout(timer);
+    }, [currentIndex, zone.timeline]);
+
+    const current = (zone.timeline || [])[currentIndex];
+    const file = current?.file_id ? filesMap[current.file_id] : null;
+
+    const containerStyle: any = {
+      left: `${zone.x}%`,
+      top: `${zone.y}%`,
+      width: `${zone.width}%`,
+      height: `${zone.height}%`,
+      position: "absolute",
+      transform: `rotate(${layoutRotation || 0}deg) rotate(${zone.rotation || 0}deg) rotate(${current?.rotation || 0}deg)`,
+      transformOrigin: "center center",
+      overflow: "hidden",
+    };
+
+    return (
+      <div style={containerStyle} className="bg-black flex items-center justify-center">
+        {file ? (
+          <MediaPlayer fileUrl={file.file_url} fileType={file.file_type} fileName={file.name} />
+        ) : (
+          <div className="text-white text-sm">Zona (vazia)</div>
         )}
       </div>
+    );
+  };
 
-      {/* Informações de debug se não houver widgets */}
-      {(!layoutData?.widgets || layoutData.widgets.length === 0) && (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-white text-center space-y-4">
-            <h2 className="text-4xl font-bold">Layout</h2>
-            <p className="text-xl text-gray-400">
-              Zonas: {layoutData?.zones?.length || 0}
-            </p>
-            <p className="text-sm text-gray-500">
-              Widgets: {layoutData?.widgets?.length || 0}
-            </p>
-          </div>
-        </div>
+  return (
+    <div className="w-full h-screen relative bg-black overflow-hidden">
+      {/* Render zones */}
+      {layoutData?.zones && layoutData.zones.length > 0 && (
+        <>
+          {layoutData.zones.map((z: any) => (
+            <ZoneRenderer key={z.id} zone={z} layoutRotation={layoutData?.rotation} />
+          ))}
+        </>
+      )}
+
+      {/* Render Widgets on top */}
+      {layoutData?.widgets && layoutData.widgets.length > 0 && (
+        <>
+          {layoutData.widgets.map((widget: any) => (
+            <WidgetRenderer key={widget.id} widget={widget} />
+          ))}
+        </>
       )}
     </div>
   );
