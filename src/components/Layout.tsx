@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import ThemeToggle from "./ThemeToggle";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +16,8 @@ const Layout = ({ children }: LayoutProps) => {
             <SidebarTrigger />
           </header>
           <main className="flex-1 p-6 bg-background">
-            {children}
+              {children}
+              <ThemeToggle />
           </main>
         </div>
       </div>

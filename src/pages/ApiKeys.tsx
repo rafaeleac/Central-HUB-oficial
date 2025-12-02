@@ -19,9 +19,10 @@ interface ApiKey {
   id: string;
   key: string;
   name: string;
-  created_at: string;
+  created_at: string | null;
+  created_by: string | null;
   last_used_at: string | null;
-  is_active: boolean;
+  is_active: boolean | null;
 }
 
 const ApiKeys = () => {

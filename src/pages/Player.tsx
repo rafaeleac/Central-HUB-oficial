@@ -69,25 +69,57 @@ const Player = () => {
   }, [screenCode]);
 
   // Busca os itens da playlist
-  const fetchPlaylistItems = async (playlistId: string) => {
-    const { data, error } = await supabase
-      .from("playlist_items")
-      .select(`
-        *,
-        files (file_url, file_type, name),
-        layouts (name, layout_data)
-      `)
-      .eq("playlist_id", playlistId)
-      .order("order_index");
+  const fetchPlaylistItems = async (playlistId?: string | null) => {
+    try {
+      if (playlistId) {
+        const { data, error } = await supabase
+          .from("playlist_items")
+          .select(`
+            *,
+            files (file_url, file_type, name),
+            layouts (name, layout_data)
+          `)
+          .eq("playlist_id", playlistId)
+          .order("order_index");
 
-    if (error) {
-      setError("Erro ao carregar playlist");
+        if (error) throw error;
+
+        setPlaylistItems(data || []);
+        setLoading(false);
+        return;
+      }
+
+      // Se não houver playlist associada, busca arquivos enviados à central
+      const { data: filesData, error: filesError } = await supabase
+        .from("files")
+        .select("id, name, file_url, file_type, duration")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (filesError) throw filesError;
+
+      // Mapear arquivos para o formato de playlistItem esperado
+      const items = (filesData || []).map((f: any, idx: number) => ({
+        id: f.id,
+        duration: f.duration || 10,
+        file_id: f.id,
+        layout_id: null,
+        order_index: idx,
+        files: {
+          file_url: f.file_url,
+          file_type: f.file_type,
+          name: f.name,
+        },
+        layouts: null,
+      }));
+
+      setPlaylistItems(items);
       setLoading(false);
-      return;
+    } catch (err) {
+      console.error(err);
+      setError("Erro ao carregar playlist/arquivos");
+      setLoading(false);
     }
-
-    setPlaylistItems(data || []);
-    setLoading(false);
   };
 
   // Atualiza status da tela periodicamente
@@ -179,7 +211,10 @@ const MediaPlayer = ({ fileUrl, fileType, fileName }: {
   fileType: string;
   fileName: string;
 }) => {
-  if (fileType.startsWith("image/")) {
+  // handle both mime types (e.g. image/png) and simple types stored as "image"/"video"
+  const type = (fileType || "").toLowerCase();
+
+  if (type === "image" || type.startsWith("image/")) {
     return (
       <img
         src={fileUrl}
@@ -188,8 +223,7 @@ const MediaPlayer = ({ fileUrl, fileType, fileName }: {
       />
     );
   }
-
-  if (fileType.startsWith("video/")) {
+  if (type === "video" || type.startsWith("video/")) {
     return (
       <video
         src={fileUrl}
