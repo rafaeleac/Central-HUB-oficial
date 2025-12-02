@@ -1,0 +1,10 @@
+project_id = "qoylssoecufbakpxmdmq"
+
+[functions.get-screen-by-code]
+verify_jwt = false
+
+[functions.get-playlist-content]
+verify_jwt = false
+
+[functions.update-screen-status]
+verify_jwt = false
