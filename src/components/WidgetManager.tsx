@@ -285,6 +285,37 @@ export function WidgetManager({
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground">Animação</label>
+                <Select
+                  value={selectedWidget.config.animation || "none"}
+                  onValueChange={(v) =>
+                    updateWidget(selectedWidget.id, {
+                      config: { ...selectedWidget.config, animation: v },
+                    })
+                  }
+                >
+                  <option value="none">Nenhuma</option>
+                  <option value="scroll-left">Scroll (direita → esquerda)</option>
+                </Select>
+              </div>
+
+              {selectedWidget.config.animation === "scroll-left" && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Velocidade (segundos)</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={selectedWidget.config.animationSpeed || 10}
+                    onChange={(e) =>
+                      updateWidget(selectedWidget.id, {
+                        config: { ...selectedWidget.config, animationSpeed: Number(e.target.value) },
+                      })
+                    }
+                  />
+                </div>
+              )}
             </div>
           )}
 

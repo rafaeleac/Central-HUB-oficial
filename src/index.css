@@ -241,3 +241,20 @@ All colors MUST be HSL.
   background: hsl(var(--primary));
 }
 
+/* Text marquee animation used for text widgets */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.widget-marquee {
+  white-space: nowrap;
+  display: inline-block;
+  will-change: transform;
+}
+
+.widget-marquee-container {
+  overflow: hidden;
+  width: 100%;
+}
+

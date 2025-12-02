@@ -41,6 +41,8 @@ export interface TextWidgetConfig extends WidgetConfig {
     fontSize?: "small" | "medium" | "large";
     color?: string;
     alignment?: "left" | "center" | "right";
+    animation?: "none" | "scroll-left";
+    animationSpeed?: number; // seconds for full scroll
   };
 }
 
@@ -71,10 +73,12 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetConfig>> = {
     height: 10,
     rotation: 0,
     config: {
-      text: "Texto",
+          text: "Texto",
       fontSize: "medium",
       color: "#ffffff",
       alignment: "center",
+      animation: "none",
+      animationSpeed: 10,
     },
   },
 };

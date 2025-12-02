@@ -57,6 +57,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [allowOverlap, setAllowOverlap] = useState<boolean>(false);
 
   useEffect(() => {
     if (layout && open) {
@@ -100,6 +101,33 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
     }));
   };
 
+  const rectsOverlap = (a: Zone, b: Zone) => {
+    const ax1 = a.x;
+    const ay1 = a.y;
+    const ax2 = a.x + a.width;
+    const ay2 = a.y + a.height;
+
+    const bx1 = b.x;
+    const by1 = b.y;
+    const bx2 = b.x + b.width;
+    const by2 = b.y + b.height;
+
+    return !(ax2 <= bx1 || ax1 >= bx2 || ay2 <= by1 || ay1 >= by2);
+  };
+
+  const findNonOverlappingPosition = (width: number, height: number) => {
+    const step = 5;
+    const zones = localData.zones || [];
+    for (let y = 0; y <= 100 - height; y += step) {
+      for (let x = 0; x <= 100 - width; x += step) {
+        const candidate: Zone = { id: "", x, y, width, height } as Zone;
+        const overlapping = zones.some((z) => rectsOverlap(z, candidate));
+        if (!overlapping) return { x, y };
+      }
+    }
+    return { x: 0, y: 0 };
+  };
+
   const addZone = () => {
     const newZone: Zone = {
       id: String(Date.now()),
@@ -110,6 +138,13 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
       rotation: 0,
       timeline: [],
     };
+
+    if (!allowOverlap) {
+      const pos = findNonOverlappingPosition(newZone.width, newZone.height);
+      newZone.x = pos.x;
+      newZone.y = pos.y;
+    }
+
     const updatedZones = [...(localData.zones || []), newZone];
     setLocalData((d) => ({ ...d, zones: updatedZones }));
     setSelectedZoneIndex(updatedZones.length - 1);
@@ -270,20 +305,27 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
             Edite zonas, timeline e widgets. Salve para aplicar nas telas vinculadas.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-4 px-4">
-          <label className="text-sm text-muted-foreground">Rotação do Layout:</label>
-          <select
-            value={(localData as any).rotation ?? 0}
-            onChange={(e) => setLocalData((d) => ({ ...(d || {}), rotation: Number(e.target.value) as 0 | 90 | 180 | 270 }))}
-            className="bg-background text-sm border rounded px-2 h-8"
-          >
-            <option value={0}>0°</option>
-            <option value={90}>90°</option>
-            <option value={180}>180°</option>
-            <option value={270}>270°</option>
-          </select>
-        </div>
+                <div className="flex items-center gap-4 px-4">
+                  <label className="text-sm text-muted-foreground">Rotação do Layout:</label>
+                  <select
+                    value={(localData as any).rotation ?? 0}
+                    onChange={(e) => setLocalData((d) => ({ ...(d || {}), rotation: Number(e.target.value) as 0 | 90 | 180 | 270 }))}
+                    className="bg-background text-sm border rounded px-2 h-8"
+                  >
+                    <option value={0}>0°</option>
+                    <option value={90}>90°</option>
+                    <option value={180}>180°</option>
+                    <option value={270}>270°</option>
+                  </select>
 
+                  <label className="text-sm text-muted-foreground">Permitir Sobreposição</label>
+                  <input
+                    type="checkbox"
+                    checked={allowOverlap}
+                    onChange={(e) => setAllowOverlap(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                </div>
         <div className="grid grid-cols-4 gap-4">
           {/* Canvas Principal */}
           <div className="col-span-3 space-y-4">
@@ -305,6 +347,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                       top: `${z.y}%`,
                       width: `${z.width}%`,
                       height: `${z.height}%`,
+                      zIndex: i + 10,
                     }}
                   >
                     <div className="text-xs text-muted-foreground p-1">Zona {i + 1}</div>
@@ -421,6 +464,49 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                     onClick={() => removeZone(selectedZoneIndex)}
                   >
                     Remover Zona
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // bring forward (swap with next index)
+                      if (selectedZoneIndex === null) return;
+                      setLocalData((d) => {
+                        const zones = [...(d.zones || [])];
+                        const i = selectedZoneIndex;
+                        if (i < zones.length - 1) {
+                          const tmp = zones[i + 1];
+                          zones[i + 1] = zones[i];
+                          zones[i] = tmp;
+                          setSelectedZoneIndex(i + 1);
+                        }
+                        return { ...d, zones };
+                      });
+                    }}
+                  >
+                    Trazer Frente
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (selectedZoneIndex === null) return;
+                      setLocalData((d) => {
+                        const zones = [...(d.zones || [])];
+                        const i = selectedZoneIndex;
+                        if (i > 0) {
+                          const tmp = zones[i - 1];
+                          zones[i - 1] = zones[i];
+                          zones[i] = tmp;
+                          setSelectedZoneIndex(i - 1);
+                        }
+                        return { ...d, zones };
+                      });
+                    }}
+                  >
+                    Enviar Fundo
                   </Button>
                 </div>
               </div>
