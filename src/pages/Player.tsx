@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { WidgetRenderer } from "@/components/WidgetRenderer";
 
 interface PlaylistItem {
   id: string;
@@ -243,16 +244,36 @@ const MediaPlayer = ({ fileUrl, fileType, fileName }: {
   );
 };
 
-// Componente para renderizar layout (placeholder por enquanto)
+// Componente para renderizar layout com widgets
 const LayoutRenderer = ({ layoutData }: { layoutData: any }) => {
   return (
-    <div className="w-full h-screen flex items-center justify-center">
-      <div className="text-white text-center space-y-4">
-        <h2 className="text-4xl font-bold">Layout Renderizado</h2>
-        <p className="text-xl text-gray-400">
-          Zonas: {layoutData?.zones?.length || 0}
-        </p>
+    <div className="w-full h-screen relative bg-black overflow-hidden">
+      {/* Fundo do layout (zonas podem ser renderizadas aqui se necessário) */}
+      <div className="w-full h-full">
+        {/* Renderizar Widgets */}
+        {layoutData?.widgets && layoutData.widgets.length > 0 && (
+          <>
+            {layoutData.widgets.map((widget: any) => (
+              <WidgetRenderer key={widget.id} widget={widget} />
+            ))}
+          </>
+        )}
       </div>
+
+      {/* Informações de debug se não houver widgets */}
+      {(!layoutData?.widgets || layoutData.widgets.length === 0) && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-white text-center space-y-4">
+            <h2 className="text-4xl font-bold">Layout</h2>
+            <p className="text-xl text-gray-400">
+              Zonas: {layoutData?.zones?.length || 0}
+            </p>
+            <p className="text-sm text-gray-500">
+              Widgets: {layoutData?.widgets?.length || 0}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -9,25 +10,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { WidgetConfig } from "@/types/widgets";
+import { WidgetManager } from "@/components/WidgetManager";
 
 interface Zone {
   id: string;
-  x: number; // percent
-  y: number; // percent
-  width: number; // percent
-  height: number; // percent
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 interface TimelineItem {
   id: string;
   type: "file" | "layout";
   duration: number;
+  file_id?: string;
 }
 
 interface LayoutData {
   template?: string;
   zones?: Zone[];
   timeline?: TimelineItem[];
+  widgets?: WidgetConfig[];
 }
 
 interface Props {
@@ -39,21 +44,28 @@ interface Props {
 
 export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   const { toast } = useToast();
-  const [localData, setLocalData] = useState<LayoutData>({ zones: [], timeline: [] });
+  const [localData, setLocalData] = useState<LayoutData>({
+    zones: [],
+    timeline: [],
+    widgets: [],
+  });
   const [selectedZoneIndex, setSelectedZoneIndex] = useState<number | null>(null);
+  const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (layout) {
+    if (layout && open) {
       setLocalData({
         zones: layout.layout_data?.zones || [],
         timeline: layout.layout_data?.timeline || [],
+        widgets: layout.layout_data?.widgets || [],
         template: layout.layout_data?.template,
       });
       setSelectedZoneIndex(null);
+      setSelectedWidgetId(null);
     }
-  }, [layout]);
+  }, [layout, open]);
 
   useEffect(() => {
     fetchFiles();
@@ -61,7 +73,11 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
 
   const fetchFiles = async () => {
     try {
-      const { data, error } = await supabase.from("files").select("id, name, file_url, file_type, duration").order("created_at", { ascending: false }).limit(200);
+      const { data, error } = await supabase
+        .from("files")
+        .select("id, name, file_url, file_type, duration")
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (error) throw error;
       setFiles(data || []);
     } catch (e) {
@@ -77,22 +93,36 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   };
 
   const addZone = () => {
-    const newZone: Zone = { id: String(Date.now()), x: 0, y: 0, width: 50, height: 50 };
-    setLocalData((d) => ({ ...d, zones: [...(d.zones || []), newZone] }));
-    setSelectedZoneIndex((localData.zones || []).length);
+    const newZone: Zone = {
+      id: String(Date.now()),
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 50,
+    };
+    const updatedZones = [...(localData.zones || []), newZone];
+    setLocalData((d) => ({ ...d, zones: updatedZones }));
+    setSelectedZoneIndex(updatedZones.length - 1);
   };
 
   const removeZone = (index: number) => {
-    setLocalData((d) => ({ ...d, zones: (d.zones || []).filter((_, i) => i !== index) }));
+    setLocalData((d) => ({
+      ...d,
+      zones: (d.zones || []).filter((_, i) => i !== index),
+    }));
     setSelectedZoneIndex(null);
   };
 
   const addTimelineFile = (fileId: string) => {
-    const item: TimelineItem = { id: String(Date.now()), type: "file", duration: 10 };
-    setLocalData((d) => ({ ...d, timeline: [...(d.timeline || []), { ...item, id: item.id, file_id: fileId } as any] }));
+    const item: TimelineItem = {
+      id: String(Date.now()),
+      type: "file",
+      duration: 10,
+      file_id: fileId,
+    };
+    setLocalData((d) => ({ ...d, timeline: [...(d.timeline || []), item] }));
   };
 
-  // Note: we keep timeline items simple (id,type,duration,file_id) in storage
   const setTimelineItemDuration = (index: number, duration: number) => {
     setLocalData((d) => ({
       ...d,
@@ -100,152 +130,281 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
     }));
   };
 
+  const removeTimelineItem = (index: number) => {
+    setLocalData((d) => ({
+      ...d,
+      timeline: (d.timeline || []).filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSave = async () => {
     if (!layout) return;
     setSaving(true);
     try {
-      const layoutDataToSave = { ...(localData || {}), zones: localData.zones || [], timeline: localData.timeline || [] };
+      const layoutDataToSave = {
+        ...(localData || {}),
+        zones: localData.zones || [],
+        timeline: localData.timeline || [],
+        widgets: localData.widgets || [],
+      };
 
-      const { error: updateError } = await supabase.from("layouts").update({ layout_data: layoutDataToSave }).eq("id", layout.id);
+      const { error: updateError } = await supabase
+        .from("layouts")
+        .update({ layout_data: layoutDataToSave as any })
+        .eq("id", layout.id);
       if (updateError) throw updateError;
 
-      // Find playlists that reference this layout in playlist_items
-      const { data: items, error: itemsErr } = await supabase.from("playlist_items").select("playlist_id").eq("layout_id", layout.id);
+      const { data: items, error: itemsErr } = await supabase
+        .from("playlist_items")
+        .select("playlist_id")
+        .eq("layout_id", layout.id);
       if (itemsErr) throw itemsErr;
 
-      const playlistIds = Array.from(new Set((items || []).map((it: any) => it.playlist_id)));
+      const playlistIds = Array.from(
+        new Set((items || []).map((it: any) => it.playlist_id))
+      );
 
       if (playlistIds.length > 0) {
-        // Update screens that currently have those playlists assigned so they can pick up changes
-        const { error: screensErr } = await supabase.from("screens").update({ updated_at: new Date().toISOString() }).in("current_playlist_id", playlistIds);
+        const { error: screensErr } = await supabase
+          .from("screens")
+          .update({ updated_at: new Date().toISOString() })
+          .in("current_playlist_id", playlistIds);
         if (screensErr) throw screensErr;
       }
 
-      toast({ title: "Sucesso", description: "Layout salvo e telas atualizadas." });
+      toast({
+        title: "Sucesso",
+        description: "Layout salvo e telas atualizadas.",
+      });
       onOpenChange(false);
       onSuccess?.();
     } catch (e: any) {
       console.error(e);
-      toast({ title: "Erro", description: e.message || "Não foi possível salvar o layout.", variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: e.message || "Não foi possível salvar o layout.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <DialogContent open={open} onOpenChange={onOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Editar Layout</DialogTitle>
-        <DialogDescription>Edite zonas e timeline. Salve para aplicar nas telas vinculadas.</DialogDescription>
-      </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar Layout - {layout?.name}</DialogTitle>
+          <DialogDescription>
+            Edite zonas, timeline e widgets. Salve para aplicar nas telas vinculadas.
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2">
-          <div className="aspect-video bg-black relative border border-border rounded-lg overflow-hidden">
-            {(localData.zones || []).map((z, i) => (
-              <div
-                key={z.id}
-                onClick={() => setSelectedZoneIndex(i)}
-                className={`absolute border-2 ${selectedZoneIndex === i ? "border-primary" : "border-muted"} bg-white/5`}
-                style={{
-                  left: `${z.x}%`,
-                  top: `${z.y}%`,
-                  width: `${z.width}%`,
-                  height: `${z.height}%`,
-                }}
-              />
-            ))}
-          </div>
+        <div className="grid grid-cols-4 gap-4">
+          {/* Canvas Principal */}
+          <div className="col-span-3 space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Canvas</h3>
+              <div className="aspect-video bg-black relative border border-border rounded-lg overflow-hidden">
+                {/* Zonas */}
+                {(localData.zones || []).map((z, i) => (
+                  <div
+                    key={z.id}
+                    onClick={() => setSelectedZoneIndex(i)}
+                    className={`absolute border-2 transition-colors ${
+                      selectedZoneIndex === i
+                        ? "border-primary bg-primary/10"
+                        : "border-muted hover:border-primary/50 bg-white/5"
+                    } cursor-pointer`}
+                    style={{
+                      left: `${z.x}%`,
+                      top: `${z.y}%`,
+                      width: `${z.width}%`,
+                      height: `${z.height}%`,
+                    }}
+                  >
+                    <div className="text-xs text-muted-foreground p-1">Zona {i + 1}</div>
+                  </div>
+                ))}
 
-          <div className="mt-3 space-y-2">
-            <div className="flex gap-2">
-              <Button onClick={addZone}>Adicionar Zona</Button>
-              {selectedZoneIndex !== null && (
-                <Button variant="destructive" onClick={() => removeZone(selectedZoneIndex)}>
-                  Remover Zona
-                </Button>
-              )}
+                {/* Widgets Preview */}
+                {(localData.widgets || []).map((w) => (
+                  <div
+                    key={w.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWidgetId(w.id);
+                      setSelectedZoneIndex(null);
+                    }}
+                    className={`absolute border ${
+                      selectedWidgetId === w.id
+                        ? "border-blue-500 border-2"
+                        : "border-dashed border-blue-400/50"
+                    } cursor-pointer bg-blue-500/5 overflow-hidden`}
+                    style={{
+                      left: `${w.x}%`,
+                      top: `${w.y}%`,
+                      width: `${w.width}%`,
+                      height: `${w.height}%`,
+                    }}
+                  >
+                    <div className="w-full h-full flex items-center justify-center text-xs text-blue-300">
+                      {w.type === "weather" && "🌤️"}
+                      {w.type === "clock" && "🕐"}
+                      {w.type === "text" && "📝"}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {selectedZoneIndex !== null && localData.zones && localData.zones[selectedZoneIndex] && (
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-sm text-muted-foreground">X (%)</label>
-                  <Input
-                    value={String(localData.zones[selectedZoneIndex].x)}
-                    onChange={(e) => updateZone(selectedZoneIndex, { x: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground">Y (%)</label>
-                  <Input
-                    value={String(localData.zones[selectedZoneIndex].y)}
-                    onChange={(e) => updateZone(selectedZoneIndex, { y: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground">Largura (%)</label>
-                  <Input
-                    value={String(localData.zones[selectedZoneIndex].width)}
-                    onChange={(e) => updateZone(selectedZoneIndex, { width: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground">Altura (%)</label>
-                  <Input
-                    value={String(localData.zones[selectedZoneIndex].height)}
-                    onChange={(e) => updateZone(selectedZoneIndex, { height: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="col-span-1">
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Timeline</h3>
-            <div className="space-y-2 max-h-64 overflow-auto">
-              {(localData.timeline || []).map((t, i) => (
-                <div key={t.id} className="flex items-center justify-between gap-2">
-                  <div className="flex-1 text-sm">{t.type} - {t.id}</div>
-                  <div className="w-20">
+            {/* Edição de Zona */}
+            {selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex] && (
+              <div className="p-3 border border-border rounded-lg bg-muted/50 space-y-2">
+                <h4 className="text-sm font-medium">Editar Zona {selectedZoneIndex + 1}</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">X (%)</label>
                     <Input
                       type="number"
-                      min={1}
-                      value={String(t.duration || 10)}
-                      onChange={(e) => setTimelineItemDuration(i, Number(e.target.value))}
+                      value={localData.zones[selectedZoneIndex].x}
+                      onChange={(e) =>
+                        updateZone(selectedZoneIndex, { x: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Y (%)</label>
+                    <Input
+                      type="number"
+                      value={localData.zones[selectedZoneIndex].y}
+                      onChange={(e) =>
+                        updateZone(selectedZoneIndex, { y: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Largura (%)</label>
+                    <Input
+                      type="number"
+                      value={localData.zones[selectedZoneIndex].width}
+                      onChange={(e) =>
+                        updateZone(selectedZoneIndex, {
+                          width: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Altura (%)</label>
+                    <Input
+                      type="number"
+                      value={localData.zones[selectedZoneIndex].height}
+                      onChange={(e) =>
+                        updateZone(selectedZoneIndex, {
+                          height: Number(e.target.value),
+                        })
+                      }
                     />
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={addZone}
+                    variant="outline"
+                  >
+                    Adicionar Zona
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => removeZone(selectedZoneIndex)}
+                  >
+                    Remover Zona
+                  </Button>
+                </div>
+              </div>
+            )}
 
-            <div>
-              <h4 className="text-sm font-medium">Adicionar Arquivo</h4>
-              <div className="space-y-2 max-h-48 overflow-auto">
+            {/* Timeline */}
+            <div className="p-3 border border-border rounded-lg bg-muted/50 space-y-2">
+              <h4 className="text-sm font-medium">Timeline ({localData.timeline?.length || 0} itens)</h4>
+              <div className="max-h-32 overflow-auto space-y-1">
+                {(localData.timeline || []).map((t, i) => (
+                  <div key={t.id} className="flex items-center gap-2 bg-background p-2 rounded text-xs">
+                    <div className="flex-1">
+                      {t.type === "file" && `📁 Arquivo`}
+                    </div>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={t.duration}
+                      onChange={(e) =>
+                        setTimelineItemDuration(i, Number(e.target.value))
+                      }
+                      className="w-16 h-8"
+                    />
+                    <span className="text-xs text-muted-foreground">s</span>
+                    <button
+                      onClick={() => removeTimelineItem(i)}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Painel Lateral */}
+          <div className="col-span-1 space-y-4">
+            {/* Adicionar Arquivo */}
+            <div className="p-3 border border-border rounded-lg bg-muted/50 space-y-2">
+              <h4 className="text-sm font-medium">Arquivos</h4>
+              <div className="max-h-48 overflow-auto space-y-1">
                 {files.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between">
-                    <div className="text-sm truncate">{f.name}</div>
-                    <Button size="sm" onClick={() => addTimelineFile(f.id)}>
+                  <div key={f.id} className="flex items-center gap-2">
+                    <div className="text-xs flex-1 truncate">{f.name}</div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addTimelineFile(f.id)}
+                    >
                       +
                     </Button>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Widget Manager */}
+            <WidgetManager
+              widgets={localData.widgets || []}
+              selectedWidgetId={selectedWidgetId}
+              onWidgetsChange={(widgets) =>
+                setLocalData((d) => ({ ...d, widgets }))
+              }
+              onSelectWidget={setSelectedWidgetId}
+            />
           </div>
         </div>
-      </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancelar
-        </Button>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Salvando..." : "Salvar Layout"}
-        </Button>
-      </div>
-    </DialogContent>
+        {/* Botões de Ação */}
+        <div className="flex justify-end gap-2 border-t pt-4">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Salvando..." : "Salvar Layout"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
