@@ -6,6 +6,7 @@ import { Plus, Layout as LayoutIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateLayoutDialog } from "@/components/CreateLayoutDialog";
+import { LayoutEditor } from "@/components/LayoutEditor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,8 @@ const Layouts = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedLayout, setSelectedLayout] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorLayout, setEditorLayout] = useState<Layout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -153,18 +156,33 @@ const Layouts = () => {
                       <span>{new Date(layout.created_at).toLocaleDateString("pt-BR")}</span>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => {
-                      setSelectedLayout(layout.id);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        // open editor for this layout
+                        setSelectedLayout(layout.id);
+                        setEditorLayout(layout);
+                        setEditorOpen(true);
+                      }}
+                    >
+                      Editar Playout
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => {
+                        setSelectedLayout(layout.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -175,6 +193,13 @@ const Layouts = () => {
       <CreateLayoutDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+        onSuccess={fetchLayouts}
+      />
+
+      <LayoutEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        layout={editorLayout}
         onSuccess={fetchLayouts}
       />
 
