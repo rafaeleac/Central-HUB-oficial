@@ -36,6 +36,29 @@ npm i
 npm run dev
 ```
 
+## Nota sobre preview em ambiente remoto
+
+No ambiente atual (Codespaces / preview público) eu deixei o servidor de preview estático ativo
+na porta `5173` e o comando configurado em `package.json` é:
+
+```json
+"preview": "vite preview --host 0.0.0.0 --port 5173"
+```
+
+Observações importantes:
+- Não altere os scripts `dev`/`preview` se a instância atual estiver funcionando para você.
+- Se precisar reiniciar o preview estático (versão `dist`), execute:
+
+```bash
+npm run build
+npm run preview
+```
+
+- Para desenvolvimento com HMR use `npm run dev` (isso pode escolher outra porta caso 5173 esteja ocupada).
+
+Se quiser, eu posso criar um pequeno `docs/DEPLOY.md` com instruções mais completas sobre como manter o preview exposto.
+
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
