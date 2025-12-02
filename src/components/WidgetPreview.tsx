@@ -29,6 +29,8 @@ export function WidgetPreview({ widget }: Props) {
             top: `${widget.y}%`,
             width: `${widget.width}%`,
             height: `${widget.height}%`,
+            transform: `rotate(${widget.rotation || 0}deg)`,
+            transformOrigin: "center center",
           }}
         >
           <div className="w-full h-full p-1">
@@ -52,6 +54,8 @@ export function WidgetPreview({ widget }: Props) {
             top: `${widget.y}%`,
             width: `${widget.width}%`,
             height: `${widget.height}%`,
+            transform: `rotate(${widget.rotation || 0}deg)`,
+            transformOrigin: "center center",
           }}
         >
           <div className="w-full h-full flex items-center justify-center">
@@ -75,6 +79,8 @@ export function WidgetPreview({ widget }: Props) {
             height: `${widget.height}%`,
             color: widget.config.color || "#ffffff",
             textAlign: widget.config.alignment || "center",
+            transform: `rotate(${widget.rotation || 0}deg)`,
+            transformOrigin: "center center",
           }}
         >
           <div className="break-words p-1 font-semibold">
@@ -92,6 +98,8 @@ export function WidgetPreview({ widget }: Props) {
             top: `${widget.y}%`,
             width: `${widget.width}%`,
             height: `${widget.height}%`,
+            transform: `rotate(${widget.rotation || 0}deg)`,
+            transformOrigin: "center center",
           }}
         >
           {widget.type}

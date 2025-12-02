@@ -15,6 +15,8 @@ export function WidgetRenderer({ widget, isPreview = false }: WidgetRendererProp
     width: `${widget.width}%`,
     height: `${widget.height}%`,
     overflow: "hidden",
+    transform: `rotate(${(widget as any).rotation || 0}deg)`,
+    transformOrigin: "center center",
   };
 
   try {

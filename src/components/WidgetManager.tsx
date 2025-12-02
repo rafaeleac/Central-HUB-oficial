@@ -29,6 +29,7 @@ export function WidgetManager({
       y: defaults.y ?? 0,
       width: defaults.width ?? 20,
       height: defaults.height ?? 20,
+      rotation: (defaults as any).rotation ?? 0,
       config: defaults.config || {},
     };
     onWidgetsChange([...widgets, newWidget]);
@@ -142,6 +143,21 @@ export function WidgetManager({
                   updateWidget(selectedWidget.id, { height: Number(e.target.value) })
                 }
               />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Rotação (°)</label>
+              <select
+                value={(selectedWidget.rotation || 0).toString()}
+                onChange={(e) =>
+                  updateWidget(selectedWidget.id, { rotation: Number(e.target.value) as 0 | 90 | 180 | 270 })
+                }
+                className="w-full bg-background text-xs border rounded px-2 h-9"
+              >
+                <option value="0">0°</option>
+                <option value="90">90°</option>
+                <option value="180">180°</option>
+                <option value="270">270°</option>
+              </select>
             </div>
           </div>
 

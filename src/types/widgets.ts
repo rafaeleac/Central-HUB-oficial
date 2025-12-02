@@ -8,6 +8,7 @@ export interface WidgetConfig {
   y: number; // percent
   width: number; // percent
   height: number; // percent
+  rotation?: 0 | 90 | 180 | 270;
   config: Record<string, any>;
 }
 
@@ -47,6 +48,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetConfig>> = {
   weather: {
     width: 25,
     height: 30,
+    rotation: 0,
     config: {
       city: "São Paulo",
       showHumidity: true,
@@ -57,6 +59,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetConfig>> = {
   clock: {
     width: 20,
     height: 15,
+    rotation: 0,
     config: {
       format: "24h",
       showSeconds: false,
@@ -66,6 +69,7 @@ export const WIDGET_DEFAULTS: Record<WidgetType, Partial<WidgetConfig>> = {
   text: {
     width: 30,
     height: 10,
+    rotation: 0,
     config: {
       text: "Texto",
       fontSize: "medium",
