@@ -23,7 +23,7 @@ const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
                 className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm md:text-base transition-all shadow-md ${
                   currentStep >= step.number
                     ? "bg-[#ffdd00] text-black shadow-lg shadow-[#ffdd00]/40"
-                    : "bg-gray-300 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400"
+                      : "bg-gray-300 dark:bg-neutral-700 text-gray-800 dark:text-neutral-400"
                 }`}
               >
                 {currentStep > step.number ? (
@@ -38,12 +38,12 @@ const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
                   className={`font-semibold text-xs transition-colors ${
                     currentStep >= step.number
                       ? "text-[#ffdd00] dark:text-[#ffdd00]"
-                      : "text-gray-600 dark:text-neutral-500"
+                        : "text-gray-700 dark:text-neutral-500"
                   }`}
                 >
                   {step.label}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-neutral-600 hidden lg:block">
+                  <p className="text-xs text-gray-600 dark:text-neutral-600 hidden lg:block">
                   {step.description}
                 </p>
               </div>

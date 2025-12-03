@@ -72,7 +72,7 @@ const Dashboard = () => {
       <Card className="relative z-10 pointer-events-auto backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 hover:bg-white/90 dark:hover:bg-neutral-900/70 transition-colors shadow-sm">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">🚀 Comece Seu Projeto</CardTitle>
-          <CardDescription className="text-gray-700 dark:text-[#ffdd00]">
+            <CardDescription className="text-gray-600 dark:text-[#ffdd00]">
             Siga o fluxo abaixo para criar seu conteúdo visual. Clique em "Iniciar" para começar!
           </CardDescription>
         </CardHeader>
