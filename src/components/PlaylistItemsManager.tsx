@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import AppLibraryModal from "@/components/AppLibraryModal";
 
 interface PlaylistItem {
   id: string;
@@ -30,9 +31,11 @@ export const PlaylistItemsManager = ({ playlistId, playlistName }: PlaylistItems
   const [layouts, setLayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [itemType, setItemType] = useState<"file" | "layout">("file");
+  const [itemType, setItemType] = useState<"file" | "layout" | "app">("file");
   const [selectedId, setSelectedId] = useState("");
   const [duration, setDuration] = useState("10");
+  const [appModalOpen, setAppModalOpen] = useState(false);
+  const [pendingAppConfig, setPendingAppConfig] = useState<any | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,6 +82,27 @@ export const PlaylistItemsManager = ({ playlistId, playlistName }: PlaylistItems
     }
   };
 
+  const handleAddAppItem = async (app: { type: string; config: any }) => {
+    try {
+      const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.order_index)) : -1;
+      const { error } = await supabase.from("playlist_items").insert({
+        playlist_id: playlistId,
+        file_id: null,
+        layout_id: null,
+        duration: parseInt(duration),
+        order_index: maxOrder + 1,
+        app_type: app.type,
+        app_config: app.config,
+      });
+
+      if (error) throw error;
+      toast({ title: "Sucesso", description: "App adicionado à playlist!" });
+      fetchItems();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleAddItem = async () => {
     if (!selectedId) {
       toast({
@@ -92,13 +116,22 @@ export const PlaylistItemsManager = ({ playlistId, playlistName }: PlaylistItems
     try {
       const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.order_index)) : -1;
 
-      const { error } = await supabase.from("playlist_items").insert({
+      const insertPayload: any = {
         playlist_id: playlistId,
         file_id: itemType === "file" ? selectedId : null,
         layout_id: itemType === "layout" ? selectedId : null,
         duration: parseInt(duration),
         order_index: maxOrder + 1,
-      });
+      };
+
+      // If adding an app, we use app modal flow
+      if (itemType === "app") {
+        // open modal to choose app
+        setAppModalOpen(true);
+        return;
+      }
+
+      const { error } = await supabase.from("playlist_items").insert(insertPayload);
 
       if (error) throw error;
 
@@ -302,11 +335,13 @@ export const PlaylistItemsManager = ({ playlistId, playlistName }: PlaylistItems
                           {f.name}
                         </SelectItem>
                       ))
-                    : layouts.map((l) => (
+                    : itemType === "layout"
+                    ? layouts.map((l) => (
                         <SelectItem key={l.id} value={l.id}>
                           {l.name}
                         </SelectItem>
-                      ))}
+                      ))
+                    : null}
                 </SelectContent>
               </Select>
             </div>
@@ -330,6 +365,11 @@ export const PlaylistItemsManager = ({ playlistId, playlistName }: PlaylistItems
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AppLibraryModal
+        open={appModalOpen}
+        onOpenChange={(v) => setAppModalOpen(v)}
+        onAddApp={(app) => handleAddAppItem(app)}
+      />
     </Card>
   );
 };

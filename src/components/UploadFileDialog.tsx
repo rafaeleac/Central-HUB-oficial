@@ -119,7 +119,7 @@ export const UploadFileDialog = ({ open, onOpenChange, onSuccess }: UploadFileDi
               <Input
                 id="file"
                 type="file"
-                accept="image/*,video/*"
+                accept="image/*,video/*,audio/*"
                 onChange={handleFileChange}
                 className="flex-1"
               />
