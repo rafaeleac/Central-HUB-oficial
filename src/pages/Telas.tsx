@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Monitor, Trash2, Copy, ExternalLink, Link2, Play } from "lucide-react";
+import { Plus, Monitor, Trash2, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CreateScreenDialog } from "@/components/CreateScreenDialog";
+import { ScreenPlayerModal } from "@/components/ScreenPlayerModal";
 import StepIndicator from "@/components/StepIndicator";
+import TechBackground from "@/components/TechBackground";
 import {
   Select,
   SelectContent,
@@ -43,15 +45,23 @@ interface Playlist {
   name: string;
 }
 
+interface Layout {
+  id: string;
+  name: string;
+  orientation: "portrait" | "landscape";
+}
+
 const Telas = () => {
   const navigate = useNavigate();
   const [screens, setScreens] = useState<Screen[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [layouts, setLayouts] = useState<any[]>([]);
+  const [layouts, setLayouts] = useState<Layout[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const [selectedScreenForPlayer, setSelectedScreenForPlayer] = useState<Screen | null>(null);
   const { toast } = useToast();
 
   const steps = [
@@ -68,11 +78,20 @@ const Telas = () => {
     fetchLayouts();
   }, []);
 
+  // Polling periódico para verificar status de telas (a cada 30 segundos)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchScreens();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchLayouts = async () => {
     try {
       const { data, error } = await supabase
         .from("layouts")
-        .select("id, name")
+        .select("id, name, orientation")
         .order("name");
 
       if (error) throw error;
@@ -128,40 +147,29 @@ const Telas = () => {
       toast({
         title: "Sucesso",
         description: playlistId 
-          ? "Playlist associada à tela com sucesso!"
-          : "Playlist desassociada da tela.",
+          ? "Layout associado à tela com sucesso!"
+          : "Layout desassociado da tela.",
       });
 
       fetchScreens();
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar a playlist da tela.",
+        description: "Não foi possível atualizar o layout da tela.",
         variant: "destructive",
       });
     }
   };
 
-  const openPlayer = (screenCode: string) => {
-    const playerUrl = `${window.location.origin}/player/${screenCode}`;
-    window.open(playerUrl, "_blank");
+  const getLayoutOrientation = (layoutId: string | null) => {
+    if (!layoutId) return "landscape";
+    const layout = layouts.find((l) => l.id === layoutId);
+    return layout?.orientation || "landscape";
   };
 
-  const copyPlayerUrl = (screenCode: string) => {
-    const playerUrl = `${window.location.origin}/player/${screenCode}`;
-    navigator.clipboard.writeText(playerUrl);
-    toast({
-      title: "URL copiada!",
-      description: "A URL do player foi copiada para a área de transferência.",
-    });
-  };
-
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast({
-      title: "Código copiado!",
-      description: "O código de pareamento foi copiado para a área de transferência.",
-    });
+  const openPlayer = (screen: Screen) => {
+    setSelectedScreenForPlayer(screen);
+    setPlayerOpen(true);
   };
 
   const handleDelete = async () => {
@@ -194,20 +202,28 @@ const Telas = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Telas</h1>
-          <p className="text-muted-foreground">Gerencie suas telas de exibição</p>
+    <div className="space-y-6 relative min-h-screen">
+      <TechBackground />
+
+      <div className="relative z-10 pointer-events-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Etapa 5: Telas</h1>
+            <p className="text-gray-600 dark:text-[#ffdd00]">Gerencie suas telas de exibição</p>
+          </div>
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Parear Tela
+          </Button>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Parear Tela
-        </Button>
+      </div>
+
+      <div className="relative z-10 pointer-events-auto">
+        <StepIndicator currentStep={5} steps={steps} />
       </div>
 
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 relative z-10 pointer-events-auto">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardHeader>
@@ -221,7 +237,7 @@ const Telas = () => {
           ))}
         </div>
       ) : screens.length === 0 ? (
-        <Card>
+        <Card className="relative z-10 pointer-events-auto">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Monitor className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
@@ -232,51 +248,71 @@ const Telas = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 relative z-10 pointer-events-auto">
           {screens.map((screen) => (
-            <Card key={screen.id} className="relative group">
+            <Card key={screen.id} className="relative group overflow-hidden backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg">{screen.name}</CardTitle>
+                    <CardTitle className="text-lg text-gray-900 dark:text-white">{screen.name}</CardTitle>
                     {screen.location && (
-                      <CardDescription>{screen.location}</CardDescription>
+                      <CardDescription className="text-gray-600 dark:text-neutral-400">{screen.location}</CardDescription>
                     )}
                   </div>
-                  <Badge variant={screen.status === "online" ? "default" : "secondary"}>
+                  <Badge 
+                    variant={screen.status === "online" ? "default" : "destructive"}
+                    className={screen.status === "online" 
+                      ? "bg-green-600 hover:bg-green-700" 
+                      : "bg-red-600 hover:bg-red-700"
+                    }
+                  >
                     {screen.status === "online" ? "Online" : "Offline"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Código de Pareamento</p>
-                      <p className="font-mono font-bold text-lg">{screen.code}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyCode(screen.code)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                  {/* Miniatura do layout com proporção responsiva */}
+                  <div
+                    className={`w-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg flex items-center justify-center overflow-hidden ${
+                      getLayoutOrientation(screen.current_playlist_id) === "portrait"
+                        ? "aspect-[9/16]"
+                        : "aspect-video"
+                    }`}
+                  >
+                    {screen.current_playlist_id ? (
+                      <div className="w-full h-full flex items-center justify-center text-center p-4">
+                        <p className="text-xs text-gray-400">
+                          Layout em exibição
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">Sem layout vinculado</p>
+                    )}
                   </div>
 
+                  {/* Código de Pareamento (somente leitura) */}
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-xs text-gray-600 dark:text-neutral-400 mb-1">Código de Pareamento</p>
+                    <p className="font-mono font-bold text-lg text-gray-900 dark:text-white select-none">
+                      {screen.code}
+                    </p>
+                  </div>
+
+                  {/* Seletor de Layout */}
                   <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Playlist Associada</label>
+                    <label className="text-xs text-gray-600 dark:text-neutral-400">Layout Associado</label>
                     <Select
                       value={screen.current_playlist_id || "none"}
                       onValueChange={(value) => 
                         updateScreenPlaylist(screen.id, value === "none" ? null : value)
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma playlist" />
+                      <SelectTrigger className="bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700">
+                        <SelectValue placeholder="Selecione um layout" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Nenhuma</SelectItem>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         {playlists.map((playlist) => (
                           <SelectItem key={playlist.id} value={playlist.id}>
                             {playlist.name}
@@ -286,25 +322,17 @@ const Telas = () => {
                     </Select>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => openPlayer(screen.code)}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Abrir Player
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyPlayerUrl(screen.code)}
-                    >
-                      <Link2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {/* Botão Abrir Player */}
+                  <Button
+                    size="sm"
+                    className="w-full gap-2 bg-[#ffdd00] text-black hover:bg-yellow-500 dark:bg-[#ffdd00] dark:text-black dark:hover:bg-yellow-500"
+                    onClick={() => openPlayer(screen)}
+                  >
+                    <Play className="h-4 w-4" />
+                    Abrir Player
+                  </Button>
 
+                  {/* Botão Excluir */}
                   <Button
                     size="sm"
                     variant="destructive"
@@ -324,11 +352,33 @@ const Telas = () => {
         </div>
       )}
 
+      {/* Botões de Navegação */}
+      {!loading && screens.length > 0 && (
+        <div className="flex gap-4 justify-end pt-6 border-t border-gray-200 dark:border-neutral-800/50 relative z-10 pointer-events-auto">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/layouts")}
+          >
+            ← Voltar
+          </Button>
+        </div>
+      )}
+
       <CreateScreenDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSuccess={fetchScreens}
       />
+
+      {selectedScreenForPlayer && (
+        <ScreenPlayerModal
+          open={playerOpen}
+          onOpenChange={setPlayerOpen}
+          screenName={selectedScreenForPlayer.name}
+          screenCode={selectedScreenForPlayer.code}
+          playlistId={selectedScreenForPlayer.current_playlist_id}
+        />
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

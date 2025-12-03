@@ -20,8 +20,8 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Arquivos", url: "/arquivos", icon: FileImage },
+  { title: "Listas de reprodução", url: "/playlists", icon: ListVideo },
   { title: "Layouts", url: "/layouts", icon: LayoutTemplate },
-  { title: "Playlists", url: "/playlists", icon: ListVideo },
   { title: "Telas", url: "/telas", icon: Monitor },
   { title: "API Keys", url: "/api-keys", icon: Key },
   { title: "Suporte", url: "/suporte", icon: HelpCircle },
