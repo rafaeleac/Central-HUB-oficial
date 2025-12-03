@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { WidgetConfig } from "@/types/widgets";
 import { WidgetManager } from "@/components/WidgetManager";
+import { LayoutEditorPreview } from "@/components/LayoutEditorPreview";
 
 interface Zone {
   id: string;
@@ -330,59 +331,16 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
           {/* Canvas Principal */}
           <div className="col-span-3 space-y-4">
             <div className="space-y-2">
-              <h3 className="text-sm font-medium">Canvas</h3>
-              <div className="aspect-video bg-black relative border border-border rounded-lg overflow-hidden">
-                {/* Zonas */}
-                {(localData.zones || []).map((z, i) => (
-                  <div
-                    key={z.id}
-                    onClick={() => setSelectedZoneIndex(i)}
-                    className={`absolute border-2 transition-colors ${
-                      selectedZoneIndex === i
-                        ? "border-primary bg-primary/10"
-                        : "border-muted hover:border-primary/50 bg-white/5"
-                    } cursor-pointer`}
-                    style={{
-                      left: `${z.x}%`,
-                      top: `${z.y}%`,
-                      width: `${z.width}%`,
-                      height: `${z.height}%`,
-                      zIndex: i + 10,
-                    }}
-                  >
-                    <div className="text-xs text-muted-foreground p-1">Zona {i + 1}</div>
-                  </div>
-                ))}
-
-                {/* Widgets Preview */}
-                {(localData.widgets || []).map((w) => (
-                  <div
-                    key={w.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedWidgetId(w.id);
-                      setSelectedZoneIndex(null);
-                    }}
-                    className={`absolute border ${
-                      selectedWidgetId === w.id
-                        ? "border-blue-500 border-2"
-                        : "border-dashed border-blue-400/50"
-                    } cursor-pointer bg-blue-500/5 overflow-hidden`}
-                    style={{
-                      left: `${w.x}%`,
-                      top: `${w.y}%`,
-                      width: `${w.width}%`,
-                      height: `${w.height}%`,
-                    }}
-                  >
-                    <div className="w-full h-full flex items-center justify-center text-xs text-blue-300">
-                      {w.type === "weather" && "🌤️"}
-                      {w.type === "clock" && "🕐"}
-                      {w.type === "text" && "📝"}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <h3 className="text-sm font-medium">Canvas (Preview Tempo Real)</h3>
+              <LayoutEditorPreview
+                zones={localData.zones || []}
+                widgets={localData.widgets || []}
+                selectedZoneIndex={selectedZoneIndex}
+                onZoneSelect={setSelectedZoneIndex}
+                onFileDropped={(zoneIndex, fileId) => {
+                  addTimelineFileToZone(zoneIndex, fileId);
+                }}
+              />
             </div>
 
             {/* Edição de Zona */}
@@ -517,9 +475,9 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
               {selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex] ? (
                 <>
                   <h4 className="text-sm font-medium">Timeline - Zona {selectedZoneIndex + 1} ({(localData.zones[selectedZoneIndex].timeline || []).length} itens)</h4>
-                  <div className="max-h-40 overflow-auto space-y-1">
+                  <div className="max-h-40 overflow-auto space-y-2">
                     {(localData.zones[selectedZoneIndex].timeline || []).map((t, i) => (
-                      <div key={t.id} className="flex items-center gap-2 bg-background p-2 rounded text-xs">
+                      <div key={t.id} className="flex items-center gap-2 bg-background p-2 rounded text-xs border border-border">
                         <div className="flex-1 truncate">
                           {t.type === "file" && `📁 Arquivo`}
                         </div>
@@ -531,7 +489,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                           className="w-16 h-8"
                         />
                         <span className="text-xs text-muted-foreground">s</span>
-                        <label className="text-xs ml-2">Rotação</label>
+
                         <select
                           value={(t.rotation ?? 0).toString()}
                           onChange={(e) => {
@@ -545,13 +503,37 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                               ),
                             }));
                           }}
-                          className="bg-background text-xs border rounded px-1"
+                          className="bg-background text-xs border rounded px-1 h-8"
                         >
                           <option value="0">0°</option>
                           <option value="90">90°</option>
                           <option value="180">180°</option>
                           <option value="270">270°</option>
                         </select>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Replicate item
+                            const newItem: TimelineItem = {
+                              ...t,
+                              id: String(Date.now()),
+                            };
+                            setLocalData((d) => ({
+                              ...d,
+                              zones: (d.zones || []).map((z, ii) =>
+                                ii === selectedZoneIndex
+                                  ? { ...(z || {}), timeline: [...(z.timeline || []), newItem] }
+                                  : z
+                              ),
+                            }));
+                          }}
+                          title="Duplicar item"
+                        >
+                          📋
+                        </Button>
+
                         <button
                           onClick={() => removeTimelineItem(i)}
                           className="text-red-400 hover:text-red-600"
@@ -565,7 +547,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
               ) : (
                 <>
                   <h4 className="text-sm font-medium">Timeline Global ({localData.timeline?.length || 0} itens)</h4>
-                  <div className="text-xs text-muted-foreground">Clique em uma zona para visualizar/editar a timeline específica dela. Você também pode adicionar arquivos globalmente abaixo.</div>
+                  <div className="text-xs text-muted-foreground">Clique em uma zona para visualizar/editar a timeline específica dela.</div>
                 </>
               )}
             </div>
@@ -575,10 +557,17 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
           <div className="col-span-1 space-y-4">
             {/* Adicionar Arquivo */}
             <div className="p-3 border border-border rounded-lg bg-muted/50 space-y-2">
-              <h4 className="text-sm font-medium">Arquivos</h4>
+              <h4 className="text-sm font-medium">Arquivos (Arraste para zonas)</h4>
               <div className="max-h-48 overflow-auto space-y-1">
                 {files.map((f) => (
-                  <div key={f.id} className="flex items-center gap-2">
+                  <div
+                    key={f.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer?.setData("fileId", f.id);
+                    }}
+                    className="flex items-center gap-2 p-2 bg-background border border-border rounded cursor-move hover:bg-muted transition-colors"
+                  >
                     <div className="text-xs flex-1 truncate">{f.name}</div>
                     <Button
                       size="sm"
@@ -590,6 +579,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">Dica: Arraste um arquivo até uma zona para adicioná-lo.</p>
             </div>
 
             {/* Widget Manager */}
