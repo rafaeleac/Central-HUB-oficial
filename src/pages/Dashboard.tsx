@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Monitor, FileVideo, Layout, ListVideo, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StepIndicator from "@/components/StepIndicator";
+import TechBackground from "@/components/TechBackground";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -56,15 +57,19 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-6 relative min-h-screen">
+      <TechBackground />
+      
+      <div className="relative z-10 pointer-events-auto">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">Bem-vindo ao HUB Central - Seu Gerenciador de Conteúdo Visual</p>
       </div>
 
-      <StepIndicator currentStep={1} steps={steps} />
+      <div className="relative z-10 pointer-events-auto">
+        <StepIndicator currentStep={1} steps={steps} />
+      </div>
 
-      <Card>
+      <Card className="relative z-10 pointer-events-auto backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50 transition-colors">
         <CardHeader>
           <CardTitle>🚀 Comece Seu Projeto</CardTitle>
           <CardDescription className="dark:text-[#ffdd00]">
@@ -72,30 +77,21 @@ const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <Button
-              size="lg"
-              onClick={() => navigate("/arquivos")}
-              className="gap-2"
-            >
-              Iniciar Novo Projeto
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-
-            {/* Três pontos amarelos sutis */}
-            <div className="absolute top-0 right-0 flex space-x-2 transform translate-x-1 -translate-y-1">
-              <span className="inline-block w-2 h-2 bg-[#ffdd00] rounded-full shadow-sm" />
-              <span className="inline-block w-2 h-2 bg-[#ffdd00] rounded-full shadow-sm opacity-90" />
-              <span className="inline-block w-2 h-2 bg-[#ffdd00] rounded-full shadow-sm opacity-80" />
-            </div>
-          </div>
+          <Button
+            size="lg"
+            onClick={() => navigate("/arquivos")}
+            className="gap-2"
+          >
+            Iniciar Novo Projeto
+            <ArrowRight className="h-5 w-5" />
+          </Button>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 relative z-10 pointer-events-auto">
         {/* Card Telas - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
           onClick={() => navigate("/telas")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -118,7 +114,7 @@ const Dashboard = () => {
 
         {/* Card Arquivos - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
           onClick={() => navigate("/arquivos")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -139,7 +135,7 @@ const Dashboard = () => {
 
         {/* Card Layouts - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
           onClick={() => navigate("/layouts")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -160,7 +156,7 @@ const Dashboard = () => {
 
         {/* Card Playlists - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
           onClick={() => navigate("/playlists")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

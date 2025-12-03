@@ -13,54 +13,51 @@ interface StepIndicatorProps {
 
 const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
   return (
-    <div className="w-full bg-gradient-to-r from-blue-50 to-purple-50 dark:from-neutral-900 dark:to-neutral-900 p-6 rounded-lg border border-blue-200 dark:border-neutral-800 mb-8">
-      <div className="flex items-center justify-between">
+    <div className="w-full mb-8 px-2 sm:px-4">
+      <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 flex-wrap">
         {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center flex-1">
-            <div className="flex flex-col items-center flex-1">
-              {/* Círculo do step */}
+          <div key={step.number} className="flex items-center gap-1 sm:gap-2 md:gap-4">
+            {/* Círculo com número */}
+            <div className="relative flex flex-col items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm md:text-base transition-all ${
                   currentStep >= step.number
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                    ? "bg-[#ffdd00] text-black shadow-lg shadow-[#ffdd00]/30"
+                    : "bg-neutral-700 text-neutral-400"
                 }`}
               >
                 {currentStep > step.number ? (
-                  <CheckCircle2 className="h-5 w-5" />
+                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                 ) : (
                   step.number
                 )}
               </div>
-
               {/* Label e descrição */}
-              <div className="mt-2 text-center">
+              <div className="mt-1 sm:mt-2 text-center">
                 <p
-                  className={`font-semibold text-xs md:text-sm ${
-                    currentStep >= step.number 
-                      ? "text-blue-600 dark:text-[#ffdd00]" 
-                      : "text-gray-600 dark:text-gray-400"
+                  className={`font-semibold text-xs transition-colors ${
+                    currentStep >= step.number
+                      ? "text-[#ffdd00]"
+                      : "text-neutral-500"
                   }`}
                 >
                   {step.label}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 hidden md:block">
+                <p className="text-xs text-neutral-600 hidden lg:block">
                   {step.description}
                 </p>
               </div>
             </div>
 
-            {/* Divisor */}
+            {/* Linha conectora */}
             {index < steps.length - 1 && (
-              <div className="flex-1 mx-2 h-1 mb-8">
-                <div
-                  className={`h-full rounded-full transition-colors ${
-                    currentStep > step.number
-                      ? "bg-blue-600"
-                      : "bg-gray-200 dark:bg-gray-700"
-                  }`}
-                />
-              </div>
+              <div
+                className={`h-1 w-1 sm:w-2 md:w-4 lg:w-8 rounded-full transition-colors ${
+                  currentStep > step.number
+                    ? "bg-[#ffdd00]"
+                    : "bg-neutral-700"
+                }`}
+              />
             )}
           </div>
         ))}
@@ -70,3 +67,4 @@ const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
 };
 
 export default StepIndicator;
+
