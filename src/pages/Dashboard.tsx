@@ -60,19 +60,19 @@ const Dashboard = () => {
     <div className="space-y-6 relative min-h-screen">
       <TechBackground />
       
-      <div className="relative z-10 pointer-events-auto">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Bem-vindo ao HUB Central - Seu Gerenciador de Conteúdo Visual</p>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-gray-600 dark:text-muted-foreground">Bem-vindo ao HUB Central - Seu Gerenciador de Conteúdo Visual</p>
       </div>
 
       <div className="relative z-10 pointer-events-auto">
         <StepIndicator currentStep={1} steps={steps} />
       </div>
 
-      <Card className="relative z-10 pointer-events-auto backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50 transition-colors">
+      <Card className="relative z-10 pointer-events-auto backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 hover:bg-white/90 dark:hover:bg-neutral-900/70 transition-colors shadow-sm">
         <CardHeader>
-          <CardTitle>🚀 Comece Seu Projeto</CardTitle>
-          <CardDescription className="dark:text-[#ffdd00]">
+          <CardTitle className="text-gray-900 dark:text-white">🚀 Comece Seu Projeto</CardTitle>
+          <CardDescription className="text-gray-700 dark:text-[#ffdd00]">
             Siga o fluxo abaixo para criar seu conteúdo visual. Clique em "Iniciar" para começar!
           </CardDescription>
         </CardHeader>
@@ -91,20 +91,20 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 relative z-10 pointer-events-auto">
         {/* Card Telas - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 hover:bg-white/90 dark:hover:bg-neutral-900/70 shadow-sm"
           onClick={() => navigate("/telas")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Telas</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Telas</CardTitle>
+            <Monitor className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {loading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{stats.screens}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.screens}</div>
+                <p className="text-xs text-gray-600 dark:text-muted-foreground">
                   {stats.activeScreens} online
                 </p>
               </>
@@ -114,20 +114,20 @@ const Dashboard = () => {
 
         {/* Card Arquivos - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 hover:bg-white/90 dark:hover:bg-neutral-900/70 shadow-sm"
           onClick={() => navigate("/arquivos")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Arquivos</CardTitle>
-            <FileVideo className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Arquivos</CardTitle>
+            <FileVideo className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {loading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{stats.files}</div>
-                <p className="text-xs text-muted-foreground">Mídias disponíveis</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.files}</div>
+                <p className="text-xs text-gray-600 dark:text-muted-foreground">Mídias disponíveis</p>
               </>
             )}
           </CardContent>
@@ -135,20 +135,20 @@ const Dashboard = () => {
 
         {/* Card Layouts - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 hover:bg-white/90 dark:hover:bg-neutral-900/70 shadow-sm"
           onClick={() => navigate("/layouts")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Layouts</CardTitle>
-            <Layout className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Layouts</CardTitle>
+            <Layout className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {loading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{stats.layouts}</div>
-                <p className="text-xs text-muted-foreground">Templates criados</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.layouts}</div>
+                <p className="text-xs text-gray-600 dark:text-muted-foreground">Templates criados</p>
               </>
             )}
           </CardContent>
@@ -156,20 +156,20 @@ const Dashboard = () => {
 
         {/* Card Playlists - clicável */}
         <Card
-          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-md bg-neutral-900/40 border-neutral-800/50 hover:bg-neutral-900/50"
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-105 backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 hover:bg-white/90 dark:hover:bg-neutral-900/70 shadow-sm"
           onClick={() => navigate("/playlists")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Playlists</CardTitle>
-            <ListVideo className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Playlists</CardTitle>
+            <ListVideo className="h-4 w-4 text-gray-600 dark:text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {loading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{stats.playlists}</div>
-                <p className="text-xs text-muted-foreground">Sequências criadas</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.playlists}</div>
+                <p className="text-xs text-gray-600 dark:text-muted-foreground">Sequências criadas</p>
               </>
             )}
           </CardContent>
