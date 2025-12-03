@@ -1,15 +1,43 @@
 import React from "react";
 
+// ===================================================================
+// 🌤️ WEATHER ANIMATIONS COMPONENT
+// ===================================================================
+// 
+// 🎯 RESPONSABILIDADE: Renderizar animações de clima em SVG
+// 
+// 📝 O QUE ALTERAR AQUI:
+//   - Adicionar novo tipo de clima (ex: "fog", "hail")
+//   - Modificar cores de fundo (gradientes)
+//   - Ajustar velocidade de animações (@keyframes)
+//   - Alterar elementos SVG (nuvens, chuva, raios)
+// 
+// 💡 COMO ADICIONAR NOVO CLIMA:
+//   1. Adicione um novo case no switch() abaixo
+//   2. Crie novo componente SVG (ex: FogAnimation)
+//   3. Defina @keyframes com animações CSS
+//   4. Retorne SVG com elementos animados
+// 
+// 🔗 USADO POR:
+//   - WeatherWidget.tsx (renderiza fundo baseado em weather.main)
+//   - LayoutEditorPreview.tsx (pode mostrar preview de clima)
+// 
+// ⚠️ NOTA: Tipos de clima vêm de OpenWeatherMap ou Open-Meteo
+//    Exemplos: "Clear", "Clouds", "Rain", "Snow", "Thunderstorm"
+// ===================================================================
+
 interface WeatherAnimationsProps {
-  weatherType: string; // "Clear", "Clouds", "Rain", "Snow", "Thunderstorm", etc
-  className?: string;
+  weatherType: string; // Ex: "Clear", "Clouds", "Rain", "Snow", "Thunderstorm"
+  className?: string; // Classes Tailwind adicionais
 }
 
+// 🎨 Componente principal que seleciona qual animação exibir
 export const WeatherAnimations: React.FC<WeatherAnimationsProps> = ({
   weatherType,
   className = "",
 }) => {
-  // Map weather types to animation components
+  // 🔧 ALTERE AQUI: Adicione novos tipos de clima
+  // Para cada case, retorne o componente SVG correspondente
   switch (weatherType.toLowerCase()) {
     case "clear":
     case "sunny":
@@ -38,10 +66,18 @@ export const WeatherAnimations: React.FC<WeatherAnimationsProps> = ({
   }
 };
 
+// ==================== ANIMAÇÕES ESPECÍFICAS ====================
+
+// 🌞 CÉU ABERTO: Sol brilhante + nuvens leves
+// 🔧 Para alterar:
+//    - Cor do fundo: mude o gradient em style={{ background: ... }}
+//    - Posição do sol: altere cx="400" cy="150"
+//    - Velocidade: mude @keyframes sunRotate duration (8s)
 const ClearSkyAnimation: React.FC<{ className?: string }> = ({ className }) => (
   <svg
     viewBox="0 0 800 600"
     className={`w-full h-full ${className}`}
+    // 🎨 Gradient azul do céu (altere para outros azuis)
     style={{ background: "linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%)" }}
   >
     <defs>

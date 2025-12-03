@@ -3,12 +3,39 @@ import { supabase } from "@/integrations/supabase/client";
 import { WidgetConfig } from "@/types/widgets";
 import { WidgetPreview } from "@/components/WidgetPreview";
 
+// ===================================================================
+// 👁️ LAYOUT EDITOR PREVIEW - CANVAS EM TEMPO REAL
+// ===================================================================
+// 
+// 🎯 RESPONSABILIDADE: Renderizar preview do layout enquanto edita
+//    - Mostrar zonas com bordas/seleção
+//    - Exibir primeira imagem de cada zona
+//    - Suportar drag-and-drop de arquivos
+//    - Overlay de widgets
+// 
+// 📝 O QUE ALTERAR AQUI:
+//   1. Cores/estilos das zonas (className)
+//   2. Como imagens são exibidas (objectFit)
+//   3. Efeitos visuais (opacity, borders)
+//   4. Feedback de drag-drop
+// 
+// 💡 PARA ALTERAR VISUAL:
+//   - Zonas: modificar className={...} ou style={{...}}
+//   - Imagens: modificar img style (objectFit, scale)
+//   - Seleção: alterar isSelected ? "border-primary" : "border-muted"
+// 
+// 🔗 CONECTA COM:
+//   - LayoutEditor.tsx (parent)
+//   - WidgetPreview.tsx (renderiza widgets overlay)
+//   - Supabase (busca arquivo URLs)
+// ===================================================================
+
 interface Zone {
   id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: number; // % horizontal
+  y: number; // % vertical
+  width: number; // % largura
+  height: number; // % altura
   rotation?: 0 | 90 | 180 | 270;
   timeline?: TimelineItem[];
 }
@@ -26,7 +53,7 @@ interface Props {
   widgets: WidgetConfig[];
   selectedZoneIndex: number | null;
   onZoneSelect: (index: number) => void;
-  onZoneClicked?: (index: number) => void; // New: for opening edit sheet
+  onZoneClicked?: (index: number) => void; // 🆕 Dispara ao clicar (abre Sheet)
   onFileDropped?: (zoneIndex: number, fileId: string) => void;
 }
 
@@ -40,14 +67,16 @@ export function LayoutEditorPreview({
 }: Props) {
   const [filesMap, setFilesMap] = useState<Record<string, any>>({});
 
+  // 🔄 Busca metadados de arquivos quando zonas mudam
   useEffect(() => {
-    // Fetch all unique file IDs from all zones' timelines
+    // Coleta todos IDs únicos de arquivos nas timelines
     const fileIds = new Set<string>();
     zones.forEach((z) => {
       (z.timeline || []).forEach((t) => {
         if (t.file_id) fileIds.add(t.file_id);
       });
     });
+
 
     if (fileIds.size === 0) return;
 

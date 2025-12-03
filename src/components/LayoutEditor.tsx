@@ -21,30 +21,58 @@ import { WidgetConfig } from "@/types/widgets";
 import { WidgetManager } from "@/components/WidgetManager";
 import { LayoutEditorPreview } from "@/components/LayoutEditorPreview";
 
+// ===================================================================
+// 🎨 LAYOUT EDITOR - COMPONENTE PRINCIPAL DE EDIÇÃO
+// ===================================================================
+// 
+// 🎯 RESPONSABILIDADE: Interface completa para editar layouts
+//    - Criar/editar zonas (posição, tamanho, rotação)
+//    - Gerenciar timeline por zona
+//    - Adicionar widgets (clima, relógio, texto)
+//    - Salvar em Supabase
+// 
+// 📝 O QUE ALTERAR AQUI:
+//   1. Adicionar novos controles de zona (opacity, border, etc)
+//   2. Modificar lógica de validação de zona
+//   3. Alterar tempo de refresh de preview
+//   4. Adicionar novos campos ao Zone interface
+// 
+// 💡 FLUXO DE DADOS:
+//   1. Dialog abre com layout do Supabase
+//   2. Usuario edita no canvas (LayoutEditorPreview)
+//   3. Clica em zona para abrir Sheet lateral (showZoneEditSheet)
+//   4. Salva: layout_data → Supabase → atualiza telas vinculadas
+// 
+// 🔗 CONECTA COM:
+//   - LayoutEditorPreview.tsx (renderiza canvas em tempo real)
+//   - WidgetManager.tsx (gerencia widgets)
+//   - Supabase (salva layout_data)
+// ===================================================================
+
 interface Zone {
   id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation?: 0 | 90 | 180 | 270;
-  timeline?: TimelineItem[];
+  x: number; // Posição horizontal em %
+  y: number; // Posição vertical em %
+  width: number; // Largura em %
+  height: number; // Altura em %
+  rotation?: 0 | 90 | 180 | 270; // Rotação da zona
+  timeline?: TimelineItem[]; // Sequência de arquivos/layouts
 }
 
 interface TimelineItem {
   id: string;
   type: "file" | "layout";
-  duration: number;
-  file_id?: string;
-  rotation?: 0 | 90 | 180 | 270;
+  duration: number; // Segundos
+  file_id?: string; // ID do arquivo
+  rotation?: 0 | 90 | 180 | 270; // Rotação do item
 }
 
 interface LayoutData {
   template?: string;
-  zones?: Zone[];
+  zones?: Zone[]; // Array de zonas do layout
   timeline?: TimelineItem[];
-  widgets?: WidgetConfig[];
-  rotation?: 0 | 90 | 180 | 270;
+  widgets?: WidgetConfig[]; // Array de widgets (clima, relógio, etc)
+  rotation?: 0 | 90 | 180 | 270; // Rotação global do layout
 }
 
 interface Props {
@@ -63,11 +91,12 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   });
   const [selectedZoneIndex, setSelectedZoneIndex] = useState<number | null>(null);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
-  const [files, setFiles] = useState<any[]>([]);
+  const [files, setFiles] = useState<any[]>([]); // Lista de arquivos para arrastar
   const [saving, setSaving] = useState(false);
-  const [allowOverlap, setAllowOverlap] = useState<boolean>(false);
-  const [showZoneEditSheet, setShowZoneEditSheet] = useState(false);
+  const [allowOverlap, setAllowOverlap] = useState<boolean>(false); // Permitir sobreposição de zonas
+  const [showZoneEditSheet, setShowZoneEditSheet] = useState(false); // 🆕 Sheet lateral de zona
 
+  // Carrega layout quando dialog abre
   useEffect(() => {
     if (layout && open) {
       setLocalData({
@@ -85,6 +114,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
     }
   }, [layout, open]);
 
+  // Carrega lista de arquivos disponíveis para drag-drop
   useEffect(() => {
     fetchFiles();
   }, []);
@@ -103,6 +133,8 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
     }
   };
 
+  // 🔧 Atualiza propriedades de uma zona específica
+  // Uso: updateZone(0, { x: 10, y: 20 }) → muda zona 0 para x=10%, y=20%
   const updateZone = (index: number, patch: Partial<Zone>) => {
     setLocalData((d) => ({
       ...d,
@@ -110,6 +142,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
     }));
   };
 
+  // 🎯 Verifica se duas zonas se sobrepõem (usado em allowOverlap=false)
   const rectsOverlap = (a: Zone, b: Zone) => {
     const ax1 = a.x;
     const ay1 = a.y;
@@ -124,6 +157,8 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
     return !(ax2 <= bx1 || ax1 >= bx2 || ay2 <= by1 || ay1 >= by2);
   };
 
+  // 📍 Encontra posição livre para nova zona (sem sobreposição)
+  // Tenta 5% incrementos até encontrar espaço
   const findNonOverlappingPosition = (width: number, height: number) => {
     const step = 5;
     const zones = localData.zones || [];
