@@ -1,8 +1,9 @@
-import { LayoutDashboard, Monitor, FileImage, LayoutTemplate, ListVideo, LogOut, Key } from "lucide-react";
+import { LayoutDashboard, Monitor, FileImage, LayoutTemplate, ListVideo, LogOut, Key, HelpCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,7 @@ const menuItems = [
   { title: "Layouts", url: "/layouts", icon: LayoutTemplate },
   { title: "Playlists", url: "/playlists", icon: ListVideo },
   { title: "API Keys", url: "/api-keys", icon: Key },
+  { title: "Suporte", url: "/suporte", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
@@ -84,7 +86,14 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-4 border-t border-sidebar-border">
+        <div className="mt-auto p-4 border-t border-sidebar-border space-y-3">
+          {/* Botão de Tema */}
+          <div className="flex items-center justify-between">
+            {!isCollapsed && <span className="text-xs font-medium">Aparência</span>}
+            <ThemeToggle />
+          </div>
+          
+          {/* Botão Sair */}
           <Button
             variant="ghost"
             className="w-full justify-start"

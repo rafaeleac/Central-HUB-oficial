@@ -12,6 +12,7 @@ import Playlists from "./pages/Playlists";
 import Player from "./pages/Player";
 import NotFound from "./pages/NotFound";
 import ApiKeys from "./pages/ApiKeys";
+import Suporte from "./pages/Suporte";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 
@@ -82,6 +83,16 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <ApiKeys />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suporte"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Suporte />
                 </Layout>
               </ProtectedRoute>
             }

@@ -45,3 +45,6 @@ export default function ThemeToggle() {
     </button>
   );
 }
+
+// Named export também
+export { default as ThemeToggle } from "./ThemeToggle";
