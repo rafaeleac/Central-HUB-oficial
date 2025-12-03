@@ -25,10 +25,10 @@ const RssApp = ({ config }: RssAppProps) => {
 
   useEffect(() => {
     if (!config?.url) return;
-    // Use AllOrigins public proxy to avoid CORS issues
-    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(config.url)}`;
+    // Use local Supabase proxy function to avoid CORS issues
+    const proxyUrl = `${window.location.origin}/functions/v1/proxy?url=${encodeURIComponent(config.url)}`;
 
-    fetch(proxy)
+    fetch(proxyUrl)
       .then((r) => r.text())
       .then((text) => setItems(parseRSS(text)))
       .catch((e) => setError("Erro ao buscar RSS"));

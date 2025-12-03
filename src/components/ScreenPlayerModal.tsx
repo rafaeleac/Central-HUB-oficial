@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { WidgetRenderer } from "@/components/WidgetRenderer";
 
 interface ScreenPlayerModalProps {
   open: boolean;
@@ -16,6 +18,26 @@ interface ScreenPlayerModalProps {
   playlistId?: string | null;
 }
 
+interface ScreenPlayerModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  screenName: string;
+  screenCode: string;
+  playlistId?: string | null;
+}
+
+interface PlaylistItem {
+  id: string;
+  duration: number;
+  file_id: string | null;
+  layout_id: string | null;
+  order_index: number;
+  app_type?: string | null;
+  app_config?: any | null;
+  files: { file_url: string; file_type: string; name: string } | null;
+  layouts: { name: string; layout_data: any } | null;
+}
+
 export const ScreenPlayerModal = ({
   open,
   onOpenChange,
@@ -23,219 +45,218 @@ export const ScreenPlayerModal = ({
   screenCode,
   playlistId,
 }: ScreenPlayerModalProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [layoutData, setLayoutData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Buscar layout associado ao screenCode
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    if (!open || !screenCode) return;
 
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
-    const handleLoadedMetadata = () => setDuration(video.duration);
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
+    const fetchLayout = async () => {
+      setLoading(true);
+      try {
+        // 1. Buscar tela pelo código
+        const { data: screen, error: screenErr } = await supabase
+          .from("screens")
+          .select("current_playlist_id")
+          .eq("code", screenCode)
+          .single();
 
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    video.addEventListener("play", handlePlay);
-    video.addEventListener("pause", handlePause);
+        if (screenErr || !screen?.current_playlist_id) {
+          setError("Nenhuma playlist associada a esta tela");
+          setLoading(false);
+          return;
+        }
 
-    return () => {
-      video.removeEventListener("timeupdate", handleTimeUpdate);
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("play", handlePlay);
-      video.removeEventListener("pause", handlePause);
+        // 2. Buscar items da playlist
+        const { data: items, error: itemsErr } = await supabase
+          .from("playlist_items")
+          .select(`
+            *,
+            layouts (name, layout_data)
+          `)
+          .eq("playlist_id", screen.current_playlist_id)
+          .order("order_index");
+
+        if (itemsErr || !items?.length) {
+          setError("Nenhum layout encontrado na playlist");
+          setLoading(false);
+          return;
+        }
+
+        // 3. Pegar primeiro layout encontrado
+        const layoutItem = items.find((i: any) => i.layouts);
+        if (!layoutItem?.layouts) {
+          setError("Nenhum layout encontrado na playlist");
+          setLoading(false);
+          return;
+        }
+
+        setLayoutData(layoutItem.layouts.layout_data);
+        setError(null);
+      } catch (e: any) {
+        setError("Erro ao carregar layout");
+      } finally {
+        setLoading(false);
+      }
     };
-  }, []);
 
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-    }
-  };
+    fetchLayout();
+  }, [open, screenCode]);
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
+  if (loading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl bg-black border-neutral-800 h-[600px]">
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return;
-
-    if (!isFullscreen) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      }
-    } else {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
-  };
-
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const formatTime = (time: number) => {
-    if (!time || isNaN(time)) return "0:00";
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  // Gesto de toque para avançar/voltar
-  const [touchStartX, setTouchStartX] = useState(0);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-
-    if (Math.abs(diff) > 50 && videoRef.current) {
-      if (diff > 0) {
-        // Swipe left: avançar 10s
-        videoRef.current.currentTime = Math.min(
-          videoRef.current.currentTime + 10,
-          duration
-        );
-      } else {
-        // Swipe right: voltar 10s
-        videoRef.current.currentTime = Math.max(
-          videoRef.current.currentTime - 10,
-          0
-        );
-      }
-    }
-  };
+  if (error) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl bg-black border-neutral-800">
+          <DialogHeader>
+            <DialogTitle className="text-white">{screenName}</DialogTitle>
+          </DialogHeader>
+          <div className="h-[600px] flex items-center justify-center">
+            <div className="text-center text-white">
+              <p className="text-red-500">{error}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-black border-neutral-800">
-        <DialogHeader>
-          <DialogTitle className="text-white">{screenName} - Player</DialogTitle>
+      <DialogContent className="max-w-4xl bg-black border-neutral-800 p-0">
+        <DialogHeader className="p-4 border-b border-neutral-800">
+          <DialogTitle className="text-white">{screenName} - Preview</DialogTitle>
         </DialogHeader>
 
         <div
           ref={containerRef}
-          className="w-full bg-black rounded-lg overflow-hidden"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          className="w-full h-[600px] bg-black relative overflow-hidden"
         >
-          <video
-            ref={videoRef}
-            className="w-full h-auto bg-black select-none"
-            onContextMenu={(e) => e.preventDefault()}
-            controlsList="nodownload"
+          {layoutData ? (
+            <LayoutRenderer layoutData={layoutData} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-white">
+              Nenhum layout configurado
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="absolute top-2 right-2 text-white hover:bg-gray-700 z-50"
           >
-            <source
-              src={`${window.location.origin}/player/${screenCode}/stream`}
-              type="video/mp4"
-            />
-            Seu navegador não suporta reprodução de vídeo.
-          </video>
-
-          {/* Controles personalizados */}
-          <div className="bg-gradient-to-t from-black to-transparent p-4 space-y-3">
-            {/* Barra de progresso */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 w-10">
-                {formatTime(currentTime)}
-              </span>
-              <input
-                type="range"
-                min="0"
-                max={duration || 0}
-                value={currentTime}
-                onChange={handleProgressChange}
-                className="flex-1 h-1 bg-gray-700 rounded cursor-pointer appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-yellow-400 [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-yellow-400 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0"
-              />
-              <span className="text-xs text-gray-400 w-10 text-right">
-                {formatTime(duration)}
-              </span>
-            </div>
-
-            {/* Botões de controle */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={togglePlayPause}
-                  className="text-white hover:bg-gray-700"
-                >
-                  {isPlaying ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={toggleMute}
-                  className="text-white hover:bg-gray-700"
-                >
-                  {isMuted ? (
-                    <VolumeX className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={toggleFullscreen}
-                  className="text-white hover:bg-gray-700"
-                >
-                  {isFullscreen ? (
-                    <Minimize className="h-4 w-4" />
-                  ) : (
-                    <Maximize className="h-4 w-4" />
-                  )}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onOpenChange(false)}
-                  className="text-white hover:bg-gray-700"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Dica de gestos */}
-            <p className="text-xs text-gray-500 text-center">
-              Deslize para esquerda/direita para avançar/voltar 10 segundos
-            </p>
-          </div>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+// Componente para renderizar layout
+const LayoutRenderer = ({ layoutData }: { layoutData: any }) => {
+  const ZoneRenderer = ({ zone, layoutRotation }: { zone: any; layoutRotation?: number }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [filesMap, setFilesMap] = useState<Record<string, any>>({});
+
+    useEffect(() => {
+      const ids = (zone.timeline || [])
+        .filter((it: any) => it.file_id)
+        .map((it: any) => it.file_id);
+      if (ids.length === 0) return;
+
+        void supabase
+        .from("files")
+        .select("id, file_url, file_type, name, duration")
+        .in("id", ids)
+          .then(async ({ data }) => {
+          const map: Record<string, any> = {};
+          (data || []).forEach((f: any) => (map[f.id] = f));
+          setFilesMap(map);
+        })
+          .catch((e: any) => console.error(e));
+    }, [zone.timeline]);
+
+    useEffect(() => {
+      if (!zone.timeline || zone.timeline.length === 0) return;
+      const cur = zone.timeline[currentIndex];
+      const duration = (cur?.duration || 10) * 1000;
+      const timer = setTimeout(() => {
+        setCurrentIndex((p: number) =>
+          p + 1 >= zone.timeline.length ? 0 : p + 1
+        );
+      }, duration);
+      return () => clearTimeout(timer);
+    }, [currentIndex, zone.timeline]);
+
+    const current = (zone.timeline || [])[currentIndex];
+    const file = current?.file_id ? filesMap[current.file_id] : null;
+
+    const containerStyle: any = {
+      left: `${zone.x}%`,
+      top: `${zone.y}%`,
+      width: `${zone.width}%`,
+      height: `${zone.height}%`,
+      position: "absolute",
+      transform: `rotate(${layoutRotation || 0}deg) rotate(${zone.rotation || 0}deg) rotate(${current?.rotation || 0}deg)`,
+      transformOrigin: "center center",
+      overflow: "hidden",
+    };
+
+    return (
+      <div
+        style={containerStyle}
+        className="bg-black flex items-center justify-center"
+      >
+        {file ? (
+          <img
+            src={file.file_url}
+            alt={file.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="text-white text-sm">Zona (vazia)</div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full h-full relative bg-black overflow-hidden">
+      {layoutData?.zones && layoutData.zones.length > 0 && (
+        <>
+          {layoutData.zones.map((z: any) => (
+            <ZoneRenderer
+              key={z.id}
+              zone={z}
+              layoutRotation={layoutData?.rotation}
+            />
+          ))}
+        </>
+      )}
+
+      {layoutData?.widgets && layoutData.widgets.length > 0 && (
+        <>
+          {layoutData.widgets.map((widget: any) => (
+            <WidgetRenderer key={widget.id} widget={widget} />
+          ))}
+        </>
+      )}
+    </div>
   );
 };

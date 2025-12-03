@@ -1,20 +1,20 @@
-import WeatherApp from "./WeatherApp";
-import RssApp from "./RssApp";
-import RandomImageApp from "./RandomImageApp";
-import QuoteApp from "./QuoteApp";
+import CachedWeatherApp from "./CachedWeatherApp";
+import CachedRssApp from "./CachedRssApp";
+import CachedRandomImageApp from "./CachedRandomImageApp";
+import CachedQuoteApp from "./CachedQuoteApp";
 
 const AppRenderer = ({ appType, appConfig }: { appType: string; appConfig: any }) => {
   if (!appType) return null;
 
   switch (appType) {
     case "weather":
-      return <WeatherApp config={appConfig} />;
+      return <CachedWeatherApp config={appConfig} refreshInterval={60} />;
     case "rss":
-      return <RssApp config={appConfig} />;
+      return <CachedRssApp config={appConfig} refreshInterval={120} />;
     case "random_image":
-      return <RandomImageApp config={appConfig} />;
+      return <CachedRandomImageApp config={appConfig} refreshInterval={30} />;
     case "quote":
-      return <QuoteApp config={appConfig} />;
+      return <CachedQuoteApp config={appConfig} refreshInterval={30} />;
     default:
       return <div className="text-white">App não suportado: {appType}</div>;
   }
