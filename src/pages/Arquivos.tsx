@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, FileVideo, Trash2, Image as ImageIcon } from "lucide-react";
+import { Plus, FileVideo, Trash2, Image as ImageIcon, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadFileDialog } from "@/components/UploadFileDialog";
 import { Badge } from "@/components/ui/badge";
+import StepIndicator from "@/components/StepIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,12 +31,21 @@ interface File {
 }
 
 const Arquivos = () => {
+  const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const steps = [
+    { number: 1, label: "Dashboard", description: "Início" },
+    { number: 2, label: "Arquivos", description: "Upload" },
+    { number: 3, label: "Playlists", description: "Organizar" },
+    { number: 4, label: "Layouts", description: "Design" },
+    { number: 5, label: "Telas", description: "Reproduzir" },
+  ];
 
   useEffect(() => {
     fetchFiles();
@@ -105,14 +116,16 @@ const Arquivos = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Arquivos</h1>
-          <p className="text-muted-foreground">Gerencie seus arquivos de mídia</p>
+          <h1 className="text-3xl font-bold">Etapa 2: Upload de Arquivos</h1>
+          <p className="text-muted-foreground">Envie suas mídias (imagens, vídeos) para começar</p>
         </div>
         <Button onClick={() => setUploadDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Upload de Arquivo
         </Button>
       </div>
+
+      <StepIndicator currentStep={2} steps={steps} />
 
       {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -197,6 +210,25 @@ const Arquivos = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Botões de Navegação */}
+      {!loading && files.length > 0 && (
+        <div className="flex gap-4 justify-end pt-6 border-t">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/dashboard")}
+          >
+            ← Voltar
+          </Button>
+          <Button
+            onClick={() => navigate("/playlists")}
+            className="gap-2"
+          >
+            Próximo: Playlists
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
 

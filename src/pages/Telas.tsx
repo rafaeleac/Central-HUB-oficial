@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Monitor, Trash2, Copy, ExternalLink, Link2 } from "lucide-react";
+import { Plus, Monitor, Trash2, Copy, ExternalLink, Link2, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CreateScreenDialog } from "@/components/CreateScreenDialog";
+import StepIndicator from "@/components/StepIndicator";
 import {
   Select,
   SelectContent,
@@ -42,18 +44,43 @@ interface Playlist {
 }
 
 const Telas = () => {
+  const navigate = useNavigate();
   const [screens, setScreens] = useState<Screen[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [layouts, setLayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const steps = [
+    { number: 1, label: "Dashboard", description: "Início" },
+    { number: 2, label: "Arquivos", description: "Upload" },
+    { number: 3, label: "Playlists", description: "Organizar" },
+    { number: 4, label: "Layouts", description: "Design" },
+    { number: 5, label: "Telas", description: "Reproduzir" },
+  ];
+
   useEffect(() => {
     fetchScreens();
     fetchPlaylists();
+    fetchLayouts();
   }, []);
+
+  const fetchLayouts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("layouts")
+        .select("id, name")
+        .order("name");
+
+      if (error) throw error;
+      setLayouts(data || []);
+    } catch (error: any) {
+      console.error("Erro ao carregar layouts:", error);
+    }
+  };
 
   const fetchScreens = async () => {
     try {

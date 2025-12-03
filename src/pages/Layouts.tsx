@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Layout as LayoutIcon, Trash2 } from "lucide-react";
+import { Plus, Layout as LayoutIcon, Trash2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateLayoutDialog } from "@/components/CreateLayoutDialog";
 import { LayoutEditor } from "@/components/LayoutEditor";
+import StepIndicator from "@/components/StepIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +29,7 @@ interface Layout {
 }
 
 const Layouts = () => {
+  const navigate = useNavigate();
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -35,6 +38,14 @@ const Layouts = () => {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorLayout, setEditorLayout] = useState<Layout | null>(null);
   const { toast } = useToast();
+
+  const steps = [
+    { number: 1, label: "Dashboard", description: "Início" },
+    { number: 2, label: "Arquivos", description: "Upload" },
+    { number: 3, label: "Playlists", description: "Organizar" },
+    { number: 4, label: "Layouts", description: "Design" },
+    { number: 5, label: "Telas", description: "Reproduzir" },
+  ];
 
   useEffect(() => {
     fetchLayouts();
@@ -97,14 +108,16 @@ const Layouts = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Layouts</h1>
-          <p className="text-muted-foreground">Crie templates para suas telas</p>
+          <h1 className="text-3xl font-bold">Etapa 4: Edição de Layout</h1>
+          <p className="text-muted-foreground">Crie templates visuais para suas telas</p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Layout
         </Button>
       </div>
+
+      <StepIndicator currentStep={4} steps={steps} />
 
       {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -202,6 +215,25 @@ const Layouts = () => {
         layout={editorLayout}
         onSuccess={fetchLayouts}
       />
+
+      {/* Botões de Navegação */}
+      {!loading && layouts.length > 0 && (
+        <div className="flex gap-4 justify-end pt-6 border-t">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/playlists")}
+          >
+            ← Voltar
+          </Button>
+          <Button
+            onClick={() => navigate("/telas")}
+            className="gap-2"
+          >
+            Próximo: Telas
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

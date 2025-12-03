@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Monitor, FileVideo, Layout, ListVideo } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Monitor, FileVideo, Layout, ListVideo, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import StepIndicator from "@/components/StepIndicator";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -45,12 +47,41 @@ const Dashboard = () => {
     }
   };
 
+  const steps = [
+    { number: 1, label: "Dashboard", description: "Início" },
+    { number: 2, label: "Arquivos", description: "Upload" },
+    { number: 3, label: "Playlists", description: "Organizar" },
+    { number: 4, label: "Layouts", description: "Design" },
+    { number: 5, label: "Telas", description: "Reproduzir" },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Bem-vindo ao HUB Central</p>
+        <p className="text-muted-foreground">Bem-vindo ao HUB Central - Seu Gerenciador de Conteúdo Visual</p>
       </div>
+
+      <StepIndicator currentStep={1} steps={steps} />
+
+      <Card className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-300 dark:border-blue-700">
+        <CardHeader>
+          <CardTitle>🚀 Comece Seu Projeto</CardTitle>
+          <CardDescription>
+            Siga o fluxo abaixo para criar seu conteúdo visual. Clique em "Iniciar" para começar!
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            size="lg"
+            onClick={() => navigate("/arquivos")}
+            className="gap-2 bg-blue-600 hover:bg-blue-700"
+          >
+            Iniciar Novo Projeto
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Card Telas - clicável */}

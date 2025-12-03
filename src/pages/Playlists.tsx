@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ListVideo, Trash2, Settings } from "lucide-react";
+import { Plus, ListVideo, Trash2, Settings, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreatePlaylistDialog } from "@/components/CreatePlaylistDialog";
 import { PlaylistItemsManager } from "@/components/PlaylistItemsManager";
+import StepIndicator from "@/components/StepIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +28,21 @@ interface Playlist {
 }
 
 const Playlists = () => {
+  const navigate = useNavigate();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [playlistToDelete, setPlaylistToDelete] = useState<string | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const { toast } = useToast();
+
+  const steps = [
+    { number: 1, label: "Dashboard", description: "Início" },
+    { number: 2, label: "Arquivos", description: "Upload" },
+    { number: 3, label: "Playlists", description: "Organizar" },
+    { number: 4, label: "Layouts", description: "Design" },
+    { number: 5, label: "Telas", description: "Reproduzir" },
+  ];
 
   useEffect(() => {
     fetchPlaylists();
@@ -99,19 +110,34 @@ const Playlists = () => {
             playlistId={selectedPlaylist.id}
             playlistName={selectedPlaylist.name}
           />
+          {/* Botões de Navegação */}
+          <div className="flex gap-4 justify-end pt-6 border-t">
+            <Button variant="outline" onClick={() => navigate("/arquivos")}>
+              ← Voltar
+            </Button>
+            <Button
+              onClick={() => navigate("/layouts")}
+              className="gap-2"
+            >
+              Próximo: Layouts
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
         </>
       ) : (
         <>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Playlists</h1>
-              <p className="text-muted-foreground">Organize suas sequências de conteúdo</p>
+              <h1 className="text-3xl font-bold">Etapa 3: Formação de Playlists</h1>
+              <p className="text-muted-foreground">Organize seus arquivos em sequências de conteúdo</p>
             </div>
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nova Playlist
             </Button>
           </div>
+
+          <StepIndicator currentStep={3} steps={steps} />
 
           {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
