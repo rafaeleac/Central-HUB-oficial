@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Cloud, CloudRain, Sun, Wind } from "lucide-react";
+import { WeatherAnimations } from "./WeatherAnimations";
 
 interface WeatherData {
   temp: number;
@@ -8,6 +9,7 @@ interface WeatherData {
   humidity: number;
   windSpeed: number;
   icon: string;
+  main?: string; // for weather type matching
 }
 
 interface Props {
@@ -50,6 +52,7 @@ export function WeatherWidget({ city = "São Paulo", latitude, longitude, classN
             humidity: data.main.humidity,
             windSpeed: Math.round(data.wind.speed * 3.6), // m/s para km/h
             icon: data.weather[0].icon,
+            main: data.weather[0].main,
           });
         } else {
           // Fallback: usar uma API pública que não requer key (Open-Meteo)
@@ -109,6 +112,33 @@ export function WeatherWidget({ city = "São Paulo", latitude, longitude, classN
             99: "Trovoada com granizo forte",
           };
 
+          const weatherTypeMap: { [key: number]: string } = {
+            0: "Clear",
+            1: "Clouds",
+            2: "Clouds",
+            3: "Clouds",
+            45: "Mist",
+            48: "Mist",
+            51: "Drizzle",
+            53: "Drizzle",
+            55: "Rain",
+            61: "Rain",
+            63: "Rain",
+            65: "Rain",
+            71: "Snow",
+            73: "Snow",
+            75: "Snow",
+            77: "Snow",
+            80: "Rain",
+            81: "Rain",
+            82: "Rain",
+            85: "Snow",
+            86: "Snow",
+            95: "Thunderstorm",
+            96: "Thunderstorm",
+            99: "Thunderstorm",
+          };
+
           setWeather({
             temp: Math.round(current.temperature_2m),
             description: weatherDescriptions[current.weather_code] || "Nublado",
@@ -116,6 +146,7 @@ export function WeatherWidget({ city = "São Paulo", latitude, longitude, classN
             humidity: current.relative_humidity_2m,
             windSpeed: Math.round(current.wind_speed_10m),
             icon: current.weather_code < 3 ? "01d" : current.weather_code < 50 ? "02d" : "09d",
+            main: weatherTypeMap[current.weather_code] || "Clouds",
           });
         }
       } catch (err) {
@@ -147,9 +178,12 @@ export function WeatherWidget({ city = "São Paulo", latitude, longitude, classN
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg ${className}`}>
-        <div className="text-center">
-          <div className="animate-pulse text-white">Carregando clima...</div>
+      <div className={`flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg relative overflow-hidden ${className}`}>
+        <div className="absolute inset-0">
+          <WeatherAnimations weatherType="Clouds" className="w-full h-full" />
+        </div>
+        <div className="text-center text-white relative z-10">
+          <div className="animate-pulse">Carregando clima...</div>
         </div>
       </div>
     );
@@ -157,30 +191,41 @@ export function WeatherWidget({ city = "São Paulo", latitude, longitude, classN
 
   if (error || !weather) {
     return (
-      <div className={`flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg ${className}`}>
-        <div className="text-center text-gray-300 text-sm">{error}</div>
+      <div className={`flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg relative overflow-hidden ${className}`}>
+        <div className="absolute inset-0">
+          <WeatherAnimations weatherType="Clouds" className="w-full h-full" />
+        </div>
+        <div className="text-center text-gray-300 text-sm relative z-10">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg text-white ${className}`}>
-      <div className="text-sm text-gray-300 mb-2">{weather.city}</div>
+    <div className={`flex flex-col items-center justify-center p-6 rounded-lg text-white relative overflow-hidden ${className}`} style={{ minHeight: "200px" }}>
+      {/* Animated background based on weather type */}
+      <div className="absolute inset-0 z-0">
+        <WeatherAnimations weatherType={weather.main || "Clouds"} className="w-full h-full" />
+      </div>
 
-      <div className="flex items-center justify-center mb-3">{getWeatherIcon()}</div>
+      {/* Content overlay */}
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+        <div className="text-sm text-gray-100 mb-2 drop-shadow-lg">{weather.city}</div>
 
-      <div className="text-5xl font-bold mb-2">{weather.temp}°C</div>
+        <div className="flex items-center justify-center mb-3 drop-shadow-lg">{getWeatherIcon()}</div>
 
-      <div className="text-base text-gray-200 mb-4">{weather.description}</div>
+        <div className="text-5xl font-bold mb-2 drop-shadow-lg text-white">{weather.temp}°C</div>
 
-      <div className="w-full grid grid-cols-2 gap-2 text-xs text-gray-300">
-        <div className="flex items-center justify-center gap-1">
-          <span>💧</span>
-          <span>{weather.humidity}%</span>
-        </div>
-        <div className="flex items-center justify-center gap-1">
-          <Wind className="w-3 h-3" />
-          <span>{weather.windSpeed} km/h</span>
+        <div className="text-base text-gray-100 mb-4 drop-shadow-lg">{weather.description}</div>
+
+        <div className="w-full grid grid-cols-2 gap-2 text-xs text-gray-100 drop-shadow-lg">
+          <div className="flex items-center justify-center gap-1">
+            <span>💧</span>
+            <span>{weather.humidity}%</span>
+          </div>
+          <div className="flex items-center justify-center gap-1">
+            <Wind className="w-3 h-3" />
+            <span>{weather.windSpeed} km/h</span>
+          </div>
         </div>
       </div>
     </div>

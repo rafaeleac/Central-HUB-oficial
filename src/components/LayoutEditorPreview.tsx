@@ -26,6 +26,7 @@ interface Props {
   widgets: WidgetConfig[];
   selectedZoneIndex: number | null;
   onZoneSelect: (index: number) => void;
+  onZoneClicked?: (index: number) => void; // New: for opening edit sheet
   onFileDropped?: (zoneIndex: number, fileId: string) => void;
 }
 
@@ -34,6 +35,7 @@ export function LayoutEditorPreview({
   widgets,
   selectedZoneIndex,
   onZoneSelect,
+  onZoneClicked,
   onFileDropped,
 }: Props) {
   const [filesMap, setFilesMap] = useState<Record<string, any>>({});
@@ -75,7 +77,10 @@ export function LayoutEditorPreview({
         return (
           <div
             key={zone.id}
-            onClick={() => onZoneSelect(i)}
+            onClick={() => {
+              onZoneSelect(i);
+              onZoneClicked?.(i); // Trigger sheet opening
+            }}
             onDragOver={(e) => {
               e.preventDefault();
               e.currentTarget.style.opacity = "0.7";

@@ -7,6 +7,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +66,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   const [files, setFiles] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [allowOverlap, setAllowOverlap] = useState<boolean>(false);
+  const [showZoneEditSheet, setShowZoneEditSheet] = useState(false);
 
   useEffect(() => {
     if (layout && open) {
@@ -298,7 +306,8 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Layout - {layout?.name}</DialogTitle>
@@ -337,6 +346,7 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
                 widgets={localData.widgets || []}
                 selectedZoneIndex={selectedZoneIndex}
                 onZoneSelect={setSelectedZoneIndex}
+                onZoneClicked={() => setShowZoneEditSheet(true)}
                 onFileDropped={(zoneIndex, fileId) => {
                   addTimelineFileToZone(zoneIndex, fileId);
                 }}
@@ -609,5 +619,154 @@ export function LayoutEditor({ open, onOpenChange, layout, onSuccess }: Props) {
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Zone Edit Sheet (opened when clicking on zone preview) */}
+    <Sheet open={showZoneEditSheet} onOpenChange={setShowZoneEditSheet}>
+      <SheetContent side="right" className="w-[400px]">
+        <SheetHeader>
+          <SheetTitle>Editar Zona {selectedZoneIndex !== null ? selectedZoneIndex + 1 : ""}</SheetTitle>
+          <SheetDescription>
+            Edite propriedades da zona e timeline de itens.
+          </SheetDescription>
+        </SheetHeader>
+        {selectedZoneIndex !== null && localData.zones?.[selectedZoneIndex] && (
+          <div className="space-y-4 mt-6">
+            {/* Position & Size */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Posição e Tamanho</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">X (%)</label>
+                  <Input
+                    type="number"
+                    value={localData.zones[selectedZoneIndex].x}
+                    onChange={(e) =>
+                      updateZone(selectedZoneIndex, { x: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Y (%)</label>
+                  <Input
+                    type="number"
+                    value={localData.zones[selectedZoneIndex].y}
+                    onChange={(e) =>
+                      updateZone(selectedZoneIndex, { y: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Largura (%)</label>
+                  <Input
+                    type="number"
+                    value={localData.zones[selectedZoneIndex].width}
+                    onChange={(e) =>
+                      updateZone(selectedZoneIndex, { width: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Altura (%)</label>
+                  <Input
+                    type="number"
+                    value={localData.zones[selectedZoneIndex].height}
+                    onChange={(e) =>
+                      updateZone(selectedZoneIndex, { height: Number(e.target.value) })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Rotation */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Rotação da Zona</label>
+              <select
+                value={(localData.zones[selectedZoneIndex].rotation || 0).toString()}
+                onChange={(e) =>
+                  updateZone(selectedZoneIndex, { rotation: Number(e.target.value) as 0 | 90 | 180 | 270 })
+                }
+                className="w-full bg-background text-sm border rounded px-2 h-9"
+              >
+                <option value="0">0°</option>
+                <option value="90">90°</option>
+                <option value="180">180°</option>
+                <option value="270">270°</option>
+              </select>
+            </div>
+
+            {/* Timeline Items */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Itens da Timeline ({(localData.zones[selectedZoneIndex].timeline || []).length})</h4>
+              <div className="max-h-60 overflow-auto space-y-2 border rounded-lg p-2 bg-muted/30">
+                {(localData.zones[selectedZoneIndex].timeline || []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">Arraste arquivos para adicionar itens</p>
+                ) : (
+                  (localData.zones[selectedZoneIndex].timeline || []).map((t, i) => (
+                    <div key={t.id} className="flex items-center gap-2 bg-background p-2 rounded border border-border text-xs">
+                      <div className="flex-1 truncate">Arquivo {i + 1}</div>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={t.duration}
+                        onChange={(e) => setTimelineItemDuration(i, Number(e.target.value))}
+                        className="w-16 h-8 text-xs"
+                      />
+                      <span className="text-xs">s</span>
+                      <select
+                        value={(t.rotation ?? 0).toString()}
+                        onChange={(e) => {
+                          const rot = Number(e.target.value) as 0 | 90 | 180 | 270;
+                          setLocalData((d) => ({
+                            ...d,
+                            zones: (d.zones || []).map((z, ii) =>
+                              ii === selectedZoneIndex
+                                ? { ...(z || {}), timeline: (z.timeline || []).map((it, idx) => (idx === i ? { ...it, rotation: rot } : it)) }
+                                : z
+                            ),
+                          }));
+                        }}
+                        className="bg-background text-xs border rounded px-1 h-8"
+                      >
+                        <option value="0">0°</option>
+                        <option value="90">90°</option>
+                        <option value="180">180°</option>
+                        <option value="270">270°</option>
+                      </select>
+                      <button
+                        onClick={() => removeTimelineItem(i)}
+                        className="text-red-400 hover:text-red-600 text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => removeZone(selectedZoneIndex)}
+                className="flex-1"
+              >
+                Remover Zona
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowZoneEditSheet(false)}
+                className="flex-1"
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+    </>
   );
 }
