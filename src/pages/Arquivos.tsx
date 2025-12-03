@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UploadFileDialog } from "@/components/UploadFileDialog";
 import { Badge } from "@/components/ui/badge";
 import StepIndicator from "@/components/StepIndicator";
+import TechBackground from "@/components/TechBackground";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,7 +74,6 @@ const Arquivos = () => {
 
   const handleDelete = async () => {
     if (!selectedFile) return;
-
     try {
       const { error } = await supabase
         .from("files")
@@ -91,7 +91,7 @@ const Arquivos = () => {
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível excluir o arquivo.",
+        description: "Não foi possível remover o arquivo.",
         variant: "destructive",
       });
     } finally {
@@ -113,11 +113,13 @@ const Arquivos = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="space-y-6 relative min-h-screen">
+        <TechBackground />
+      
+        <div className="flex items-center justify-between relative z-10 pointer-events-auto">
         <div>
-          <h1 className="text-3xl font-bold">Etapa 2: Upload de Arquivos</h1>
-          <p className="text-muted-foreground">Envie suas mídias (imagens, vídeos) para começar</p>
+           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Etapa 2: Upload de Arquivos</h1>
+           <p className="text-gray-600 dark:text-[#ffdd00]">Envie suas mídias (imagens, vídeos) para começar</p>
         </div>
         <Button onClick={() => setUploadDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -125,10 +127,12 @@ const Arquivos = () => {
         </Button>
       </div>
 
+      <div className="relative z-10 pointer-events-auto">
       <StepIndicator currentStep={2} steps={steps} />
+      </div>
 
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 relative z-10 pointer-events-auto">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardHeader>
@@ -144,7 +148,7 @@ const Arquivos = () => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileVideo className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-center">
+            <p className="text-gray-600 dark:text-muted-foreground text-center">
               Nenhum arquivo enviado ainda.
               <br />
               Clique em "Upload de Arquivo" para começar.
@@ -154,7 +158,7 @@ const Arquivos = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {files.map((file) => (
-            <Card key={file.id} className="overflow-hidden">
+            <Card key={file.id} className="overflow-hidden backdrop-blur-sm bg-white/80 dark:bg-neutral-900/60 border-gray-200 dark:border-neutral-800/50 shadow-sm hover:shadow-md transition-shadow">
               <div className="aspect-video bg-muted relative">
                 {file.file_type === "image" ? (
                   <img
@@ -176,23 +180,23 @@ const Arquivos = () => {
                 </Badge>
               </div>
               <CardHeader>
-                <CardTitle className="text-lg truncate">{file.name}</CardTitle>
+                 <CardTitle className="text-lg truncate text-gray-900 dark:text-white">{file.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm mb-4">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tamanho:</span>
-                    <span>{formatFileSize(file.file_size)}</span>
+                      <span className="text-gray-600 dark:text-neutral-400">Tamanho:</span>
+                      <span className="text-gray-900 dark:text-white">{formatFileSize(file.file_size)}</span>
                   </div>
                   {file.duration && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duração:</span>
-                      <span>{formatDuration(file.duration)}</span>
+                        <span className="text-gray-600 dark:text-neutral-400">Duração:</span>
+                        <span className="text-gray-900 dark:text-white">{formatDuration(file.duration)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Enviado:</span>
-                    <span>{new Date(file.created_at).toLocaleDateString("pt-BR")}</span>
+                      <span className="text-gray-600 dark:text-neutral-400">Enviado:</span>
+                      <span className="text-gray-900 dark:text-white">{new Date(file.created_at).toLocaleDateString("pt-BR")}</span>
                   </div>
                 </div>
                 <Button
@@ -215,7 +219,7 @@ const Arquivos = () => {
 
       {/* Botões de Navegação */}
       {!loading && files.length > 0 && (
-        <div className="flex gap-4 justify-end pt-6 border-t">
+          <div className="flex gap-4 justify-end pt-6 border-t border-gray-200 dark:border-neutral-800/50 relative z-10 pointer-events-auto">
           <Button
             variant="outline"
             onClick={() => navigate("/dashboard")}
