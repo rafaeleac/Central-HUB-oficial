@@ -13,7 +13,7 @@ interface StepIndicatorProps {
 
 const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
   return (
-    <div className="w-full bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800 mb-8">
+    <div className="w-full bg-gradient-to-r from-blue-50 to-purple-50 dark:from-neutral-900 dark:to-neutral-900 p-6 rounded-lg border border-blue-200 dark:border-neutral-800 mb-8">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
           <div key={step.number} className="flex items-center flex-1">
@@ -37,7 +37,9 @@ const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
               <div className="mt-2 text-center">
                 <p
                   className={`font-semibold text-xs md:text-sm ${
-                    currentStep >= step.number ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400"
+                    currentStep >= step.number 
+                      ? "text-blue-600 dark:text-[#ffdd00]" 
+                      : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
                   {step.label}

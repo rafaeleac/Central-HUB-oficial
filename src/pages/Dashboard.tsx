@@ -64,22 +64,31 @@ const Dashboard = () => {
 
       <StepIndicator currentStep={1} steps={steps} />
 
-      <Card className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-300 dark:border-blue-700">
+      <Card>
         <CardHeader>
           <CardTitle>🚀 Comece Seu Projeto</CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-[#ffdd00]">
             Siga o fluxo abaixo para criar seu conteúdo visual. Clique em "Iniciar" para começar!
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button
-            size="lg"
-            onClick={() => navigate("/arquivos")}
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
-          >
-            Iniciar Novo Projeto
-            <ArrowRight className="h-5 w-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              size="lg"
+              onClick={() => navigate("/arquivos")}
+              className="gap-2"
+            >
+              Iniciar Novo Projeto
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+
+            {/* Três pontos amarelos sutis */}
+            <div className="absolute top-0 right-0 flex space-x-2 transform translate-x-1 -translate-y-1">
+              <span className="inline-block w-2 h-2 bg-[#ffdd00] rounded-full shadow-sm" />
+              <span className="inline-block w-2 h-2 bg-[#ffdd00] rounded-full shadow-sm opacity-90" />
+              <span className="inline-block w-2 h-2 bg-[#ffdd00] rounded-full shadow-sm opacity-80" />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
