@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { WidgetRenderer } from "@/components/WidgetRenderer";
+import AppRenderer from "@/components/apps/AppRenderer";
 
 interface PlaylistItem {
   id: string;
@@ -10,6 +11,8 @@ interface PlaylistItem {
   file_id: string | null;
   layout_id: string | null;
   order_index: number;
+  app_type?: string | null;
+  app_config?: any | null;
   files: {
     file_url: string;
     file_type: string;
@@ -192,16 +195,19 @@ const Player = () => {
 
   return (
     <div className="min-h-screen w-full bg-black flex items-center justify-center overflow-hidden">
-      {currentItem?.files && (
+      {currentItem?.app_type ? (
+        <div className="w-full h-screen">
+          <AppRenderer appType={currentItem.app_type} appConfig={currentItem.app_config} />
+        </div>
+      ) : currentItem?.files ? (
         <MediaPlayer
           fileUrl={currentItem.files.file_url}
           fileType={currentItem.files.file_type}
           fileName={currentItem.files.name}
         />
-      )}
-      {currentItem?.layouts && (
+      ) : currentItem?.layouts ? (
         <LayoutRenderer layoutData={currentItem.layouts.layout_data} />
-      )}
+      ) : null}
     </div>
   );
 };
